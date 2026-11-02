@@ -10,7 +10,7 @@ Update at the end of every session: tick what is done, set the current step, add
 - [x] Claude Code memory: CLAUDE.md, docs/, slash commands
 - [ ] Create Supabase project; fill `.env.local`
 - [x] Git repository initialised; first commit made locally
-- [ ] Push to GitHub (bharathmit/crop-season-app)
+- [x] Pushed to GitHub: https://github.com/bharathmit/crop-season-app
 - [x] GitHub Pages deploy workflow (.github/workflows/deploy.yml)
 
 ## Phase 1 — Data model
@@ -46,3 +46,4 @@ Update at the end of every session: tick what is done, set the current step, add
 ## Session log
 - 2026-11-02 — Requirements agreed; stack chosen (React + Supabase); project scaffold and Claude Code memory files created. Build passes.
 - 2026-11-02 — Added GitHub Pages auto-deploy workflow; router basename + Vite base path for Pages.
+- 2026-11-02 — Pushed to GitHub. Pending: owner sets Settings → Pages → Source = GitHub Actions, then re-run the deploy workflow.
