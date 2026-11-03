@@ -45,7 +45,10 @@ docs/             requirements, decisions, data model, progress, stage templates
 ```
 
 ## Domain glossary
-- **Crop cycle**: one crop on one plot in one season (plot + season + crop + variety + area + sowing date). Every expense, income and checklist tick belongs to a crop cycle.
+- **Farm**: a land holding with its own acres. Has farm-level expenses and income (borewell, fencing, lease, tax).
+- **Machinery**: an owned machine (tractor, power tiller…) on a farm. Has its own expenses (fuel, repair, EMI) and income (hire-out).
+- **Crop**: one crop grown on one farm in one season (crop name + variety + season + year + acres + sowing date + harvest). Crop expenses and income are tagged with a stage.
+- **Overall profit** = crop profit + farm net + machinery net.
 - **Stage**: an ordered phase of a crop. Default list for every crop: Preparation → Seeding → Transplanting → Growing → Fruiting → Harvesting → Post Harvest → Sold. Each crop gets its own copy; the user can add, rename, reorder or deactivate stages per crop.
 - **Cash profit**: income received − money paid out. Family labour and own-farm inputs are **not** costed (they may be logged by quantity only).
 - **Seasons**: Kuruvai, Samba, Navarai, or custom.
@@ -54,6 +57,6 @@ docs/             requirements, decisions, data model, progress, stage templates
 - Money in INR, stored as `numeric(12,2)`; display with `₹` and Indian grouping (`en-IN`).
 - Dates stored as `date` (ISO), displayed DD-MM-YYYY.
 - Areas in acres.
-- **Per-acre everywhere:** every money figure tied to a crop cycle (expense, subsidy, net, income, totals, profit) is shown with its per-acre value = amount ÷ crop cycle `area_acres`. In entry forms it updates live as the user types (e.g. 6 acres: ₹9,000 → ₹1,500 / acre). Use one shared helper/component (`lib/perAcre.ts`, `<AmountWithPerAcre>`).
+- **Per-acre everywhere:** every money figure tied to a crop, farm or machine (expense, subsidy, net, income, totals, profit) is shown with its per-acre value = amount ÷ `crops.area_acres` (crop) or `farms.area_acres` (farm, machinery). In entry forms it updates live as the user types (e.g. 6 acres: ₹9,000 → ₹1,500 / acre). Use one shared helper/component (`lib/perAcre.ts`, `<AmountWithPerAcre>`).
 - Table and column names in snake_case; TS types in camelCase.
 - Every user-owned table has `user_id` + row-level security limiting rows to `auth.uid()`.

@@ -74,3 +74,25 @@ From the owner's Excel paddy tracker. Seeded into `expense_categories` / `expens
 | MSP State Bonus | Quintal |
 | Crop Insurance Claim Received | Lumpsum |
 | Other Income / By-Products | Lumpsum |
+
+## Farm categories (scope = farm, no stage)
+| Type | Category | Items |
+| --- | --- | --- |
+| expense | Land Development | Land levelling (one-time), Soil reclamation, Bund construction |
+| expense | Water & Irrigation Infrastructure | Borewell drilling, Pump / motor purchase, Pipeline, Drip / sprinkler |
+| expense | Fencing & Buildings | Fencing, Farm shed, Storage room |
+| expense | Tools & Equipment | Hand tools, Spray tanks, Tarpaulin |
+| expense | Land Lease, Tax & Fees | Land lease rent, Land tax (kist), Patta / registration fees |
+| expense | Utilities | Electricity (farm), Water charges |
+| expense | Other Farm Expense | Farm labour (general), Miscellaneous |
+| income | Farm Income | Land lease received, Coconut / tree produce, Other farm income |
+
+## Machinery categories (scope = machinery, no stage)
+| Type | Category | Items |
+| --- | --- | --- |
+| expense | Purchase & Loan | Purchase cost, Down payment, Loan EMI, Loan interest |
+| expense | Fuel | Diesel, Petrol, Engine oil |
+| expense | Repair & Maintenance | Service, Spare parts, Tyres, Battery |
+| expense | Operator | Driver / operator wages |
+| expense | Insurance & Tax | Insurance, Road tax / registration |
+| income | Machinery Income | Hire-out income (per hour / per acre), Sale of machine |

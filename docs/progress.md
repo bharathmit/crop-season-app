@@ -2,7 +2,7 @@
 
 Update at the end of every session: tick what is done, set the current step, add a dated line to the session log.
 
-**Current step:** Phase 1 — owner review of full data model draft (docs/data-model.md, docs/seed/expense-items.md).
+**Current step:** Phase 1 — owner review of data model v3 (9 tables).
 
 ## Phase 0 — Setup
 - [x] Requirements analysis and v1 scope agreed
@@ -50,3 +50,4 @@ Update at the end of every session: tick what is done, set the current step, add
 - 2026-11-03 — Default stage list agreed (Preparation → Sold, editable per crop). Paddy checklist remapped. Data model Part 1 drafted for review.
 - 2026-11-03 — Data model redrafted from owner's Excel tracker: category/item + stage on each expense, subsidy, income with govt bonus, harvest moisture, P&L metrics. Expense item seed list added.
 - 2026-11-03 — Rule added: per-acre value shown beside every amount, live in entry forms.
+- 2026-11-03 — Data model v3: plots → farms; machinery added; crops/seasons/cycles/harvest merged into crops; expenses + incomes merged into transactions (scope crop/farm/machinery). Farm and machinery categories seeded.

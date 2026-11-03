@@ -1,152 +1,144 @@
 # Data model
 
-**Status: DRAFT — awaiting owner review. No migration written yet.** 12 tables + 3 views + 1 storage bucket. Based on the owner's Excel paddy tracker (expense sheet, income sheet, P&L summary).
+**Status: DRAFT v3 — awaiting owner review. No migration written yet.** 9 tables + 4 views + 1 storage bucket.
 
-Every table has `id uuid pk default gen_random_uuid()`, `user_id uuid not null default auth.uid()`, `created_at timestamptz default now()`, and row-level security `user_id = auth.uid()`. Omitted below for brevity.
+Changes from v2 (owner review 2026-11-03):
+- `plots` → **`farms`**, with its own expense and income entries.
+- **`machinery`** added, with its own expense and income entries (fuel, repair, hire-out income).
+- `crops` + `seasons` + `crop_cycles` (+ `harvests`) **merged into one `crops` table**: one row = one crop grown on one farm in one season.
+- `expenses` + `incomes` **merged into one `transactions` table** with `entry_type` (expense / income) and `scope` (crop / farm / machinery). Overall profit = one sum.
+- `checklist_items` + `checklist_ticks` → `stage_guidance` (library) + `crop_checklist` (copied per crop, with done flag).
 
-**Two dimensions on every expense:** *category / item* = what was bought (Fertilisers → Zinc Sulphate); *stage* = when in the crop (Transplanting). Reports total by either.
+Every table has `id uuid pk default gen_random_uuid()`, `user_id uuid not null default auth.uid()`, `created_at timestamptz default now()`, and row-level security `user_id = auth.uid()`. Omitted below.
 
-## Masters
+## Money flows
+```
+Overall profit = Crop profit (all crops) + Farm net + Machinery net
+each = Σ income.net_amount − Σ expense.net_amount
+```
 
-### crops
+## Tables
+
+### 1. farms
 | Column | Type | Notes |
 | --- | --- | --- |
-| name | text not null | e.g. Paddy |
-| name_ta | text | Tamil name, optional |
-| duration_days | int | optional |
+| name | text not null | e.g. Villupuram wetland |
+| location | text | village / taluk |
+| survey_no | text | |
+| area_acres | numeric(6,2) not null | per-acre basis for farm and machinery entries |
+| ownership | text | owned / leased |
+| soil_type, water_source | text | |
 
-On insert, a trigger copies the 8 default stages into `crop_stages`.
+### 2. machinery
+| Column | Type | Notes |
+| --- | --- | --- |
+| farm_id | uuid fk → farms | |
+| name | text not null | e.g. Mahindra 575 tractor |
+| type | text | tractor, power tiller, sprayer, pump set, harvester, other |
+| purchase_date | date | |
+| purchase_cost | numeric(12,2) | recorded as a machinery expense transaction too |
+| is_active | boolean default true | |
 
-### crop_stages (per crop, user-editable)
+### 3. crops (merged: crop + season + cycle + harvest)
+| Column | Type | Notes |
+| --- | --- | --- |
+| farm_id | uuid fk → farms | |
+| crop_name | text not null | Paddy, Groundnut… (dropdown of names used before + free text) |
+| variety | text | White Ponni |
+| season | text not null | Kuruvai / Samba / Navarai / custom |
+| season_year | int not null | 2026 |
+| area_acres | numeric(6,2) not null | per-acre basis for this crop |
+| sowing_date | date | stage auto-suggest |
+| status | text | planned / active / harvested / closed |
+| harvest_date | date | |
+| gross_yield_qtl | numeric(10,2) | |
+| moisture_loss_pct | numeric(5,2) default 5 | |
+| net_yield_qtl | numeric(10,2) generated | gross × (1 − moisture / 100) |
+
+On insert: copy the 8 default stages into `crop_stages`, and matching `stage_guidance` rows into `crop_checklist`.
+
+### 4. crop_stages (per crop row, user-editable)
 | Column | Type | Notes |
 | --- | --- | --- |
 | crop_id | uuid fk → crops | |
 | name | text not null | unique per crop |
-| sort_order | int not null | reorder |
-| start_day / end_day | int | optional, days from sowing (stage auto-suggest) |
-| is_active | boolean default true | hide instead of delete |
+| sort_order | int not null | |
+| start_day / end_day | int | optional, days from sowing |
+| is_active | boolean default true | hide; delete only if unused |
 
-Defaults: Preparation, Seeding, Transplanting, Growing, Fruiting, Harvesting, Post Harvest, Sold. Delete only when unused (fk `on delete restrict`), otherwise hide.
+Defaults: Preparation, Seeding, Transplanting, Growing, Fruiting, Harvesting, Post Harvest, Sold.
 
-### expense_categories
+### 5. categories
 | Column | Type | Notes |
 | --- | --- | --- |
-| name | text not null | Land Preparation, Seeds & Nursery, Transplanting, Fertilisers & Soil Amendments, Plant Protection, Irrigation, Harvesting & Threshing, Post-Harvest & Storage, Overheads & Miscellaneous |
-| sort_order | int | |
+| scope | text not null | crop / farm / machinery |
+| entry_type | text not null | expense / income |
+| name | text not null | |
+| sort_order, is_active | | |
+
+### 6. items (pick list)
+| Column | Type | Notes |
+| --- | --- | --- |
+| category_id | uuid fk → categories | |
+| name | text not null | |
+| default_stage_name | text | crop items only; pre-fills stage |
+| default_unit | text | |
 | is_active | boolean default true | |
 
-### expense_items (pick list, user can add)
+Seed: `docs/seed/expense-items.md`.
+
+### 7. transactions (every expense and income)
 | Column | Type | Notes |
 | --- | --- | --- |
-| category_id | uuid fk → expense_categories | |
-| name | text not null | e.g. Zinc Sulphate (33%) |
-| default_stage_name | text | pre-fills stage on entry; matched by name to the cycle's crop stages |
-| default_unit | text | kg, litre, bag, hour, acre, person-day |
-| is_active | boolean default true | |
-
-Seed list: `docs/seed/expense-items.md`.
-
-### plots, seasons
-plots: `name, survey_no, area_acres, soil_type, water_source, ownership (owned/leased)`.
-seasons: `name (Kuruvai / Samba / Navarai / custom), year, start_month, end_month`.
-
-## Crop cycle
-
-### crop_cycles
-| Column | Type | Notes |
-| --- | --- | --- |
-| crop_id / plot_id / season_id | uuid fk | |
-| variety | text | e.g. White Ponni |
-| area_acres | numeric(6,2) not null | divisor for all per-acre figures (5.5 in the Excel sheet) |
-| sowing_date | date | |
-| status | text | planned / active / closed |
-
-## Expenses (Excel: expense sheet)
-
-### expenses
-| Column | Type | Excel column / notes |
-| --- | --- | --- |
-| crop_cycle_id | uuid fk | |
-| crop_stage_id | uuid fk → crop_stages | Plant Stages; must belong to the cycle's crop (trigger) |
-| item_id | uuid fk → expense_items | Expense Item (category comes from the item) |
-| start_date | date not null | Start Date |
-| end_date | date | End Date (for multi-day work) |
-| quantity | numeric(10,2) | e.g. 25 (was typed into Remarks) |
-| unit | text | kg |
-| rate | numeric(12,2) | 90 |
-| amount | numeric(12,2) not null | Total Expense; = qty × rate when both given, else typed |
-| subsidy | numeric(12,2) default 0 | Govt Subsidy |
-| net_amount | numeric(12,2) generated | Net Total = amount − subsidy |
-| supplier | text | Supplier / Source |
-| invoice_no | text | Invoice No. |
-| paid_by | text | Paid By |
-| remarks | text | Remarks / Notes |
-| bill_path | text | photo in private `bills` bucket (Ref.) |
-
-Per-acre and % of total are **calculated in views**, not stored.
-
-## Harvest and income (Excel: income sheet)
-
-### harvests
-| Column | Type | Notes |
-| --- | --- | --- |
-| crop_cycle_id | uuid fk | |
-| harvest_date | date | |
-| gross_yield_qtl | numeric(10,2) | Gross Yield at Field |
-| moisture_loss_pct | numeric(5,2) | default 5 |
-| net_yield_qtl | numeric(10,2) generated | gross × (1 − moisture/100) |
-
-### incomes
-| Column | Type | Excel column / notes |
-| --- | --- | --- |
-| crop_cycle_id | uuid fk | |
-| item | text not null | Paddy sale, Straw, Bran / Husk, MSP bonus, Insurance claim, Other |
-| unit | text | Quintal, Ton, Lumpsum |
-| quantity | numeric(10,2) | Total Qty |
-| rate | numeric(12,2) | Rate per unit (MSP / procurement price) |
-| amount | numeric(12,2) not null | Total Revenue = qty × rate, else typed |
-| govt_bonus | numeric(12,2) default 0 | Govt Bonus |
-| net_amount | numeric(12,2) generated | amount + govt_bonus |
-| buyer | text | Buyer / Mill |
+| entry_type | text not null | expense / income |
+| scope | text not null | crop / farm / machinery |
+| farm_id | uuid fk → farms not null | always set (crop and machine carry their farm) |
+| crop_id | uuid fk → crops | required when scope = crop |
+| crop_stage_id | uuid fk → crop_stages | required when scope = crop |
+| machinery_id | uuid fk → machinery | required when scope = machinery |
+| item_id | uuid fk → items | category comes from item |
+| start_date | date not null | |
+| end_date | date | |
+| quantity, unit, rate | numeric / text / numeric(12,2) | |
+| amount | numeric(12,2) not null | qty × rate when both given, else typed |
+| govt_support | numeric(12,2) default 0 | expense: subsidy · income: govt bonus |
+| net_amount | numeric(12,2) generated | expense: amount − support · income: amount + support |
+| party | text | supplier (expense) / buyer, mill (income) |
 | invoice_no | text | |
+| paid_by | text | **open question** |
 | paid_on | date | |
 | remarks | text | |
+| bill_path | text | photo in private `bills` bucket |
 
-## Stage checklist
+Check constraints enforce the required ids per scope; a trigger checks the stage belongs to the crop.
 
-### checklist_items (recommendations per crop stage, user-editable)
+### 8. stage_guidance (checklist library)
+| Column | Type | Notes |
+| --- | --- | --- |
+| crop_name | text not null | Paddy |
+| stage_name | text not null | Growing |
+| type | text | do / watch / save |
+| text | text not null | |
+| sort_order | int | |
+
+Seed: `docs/stage-templates/paddy.md`.
+
+### 9. crop_checklist (per crop, copied from guidance)
 | Column | Type | Notes |
 | --- | --- | --- |
 | crop_stage_id | uuid fk → crop_stages | |
 | type | text | do / watch / save |
-| text | text not null | e.g. Weed at ~15 and ~30 days |
-| sort_order | int | |
-| is_active | boolean default true | |
-
-Seed: `docs/stage-templates/paddy.md`.
-
-### checklist_ticks (done per crop cycle)
-| Column | Type | Notes |
-| --- | --- | --- |
-| crop_cycle_id | uuid fk | |
-| checklist_item_id | uuid fk | unique with crop_cycle_id |
+| text | text not null | editable; user can add own items |
+| is_done | boolean default false | |
 | done_on | date | |
 | note | text | |
 
 ## Report views
-
-### v_expense_by_stage / v_expense_by_category
-Per crop cycle: `name, sort_order, net_total, net_per_acre, share_pct`.
-
-### v_crop_cycle_profit (Excel: P&L summary)
-| Metric | Formula |
+| View | Shows |
 | --- | --- |
-| Total revenue | Σ incomes.net_amount |
-| Total expense | Σ expenses.net_amount |
-| Net profit / loss | revenue − expense |
-| Revenue / expense / profit per acre | ÷ area_acres |
-| ROI % | profit ÷ expense × 100 |
-| Cost-benefit ratio | revenue ÷ expense |
-| Profit per quintal | profit ÷ net yield (qtl) |
-| Break-even yield (qtl/acre) | expense per acre ÷ paddy rate per qtl |
-| Break-even price (₹/qtl) | expense ÷ net yield (qtl) |
+| v_crop_stage_summary | per crop and stage: expense net, per acre, % share |
+| v_category_summary | per scope (crop / farm / machinery) and category: net, per acre, % share |
+| v_crop_profit | per crop: revenue, expense, profit, per acre, ROI %, cost-benefit ratio, profit / qtl, break-even yield and price |
+| v_overall_profit | per farm and year (or season): crop profit + farm net + machinery net = overall profit, per acre |
+
+Per-acre basis: crop → `crops.area_acres`; farm and machinery → `farms.area_acres`.

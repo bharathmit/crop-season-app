@@ -2,6 +2,12 @@
 
 Source: requirements analysis doc https://claude.ai/artifact/7P3uv2edwX6jNvt5dtu9ub
 
+## Money scopes (v3)
+- **Crop**: expenses and income per crop, tagged by stage.
+- **Farm**: farm-level expenses and income (no stage).
+- **Machinery**: per-machine expenses and income (no stage).
+- Overall profit = crop + farm + machinery. See `docs/data-model.md`.
+
 ## Goal
 See, for each crop cycle, what was spent, what was earned, the cash profit, and which stage cost the most — with a checklist of recommended activities for each stage.
 
