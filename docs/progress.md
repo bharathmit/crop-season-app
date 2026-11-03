@@ -2,7 +2,7 @@
 
 Update at the end of every session: tick what is done, set the current step, add a dated line to the session log.
 
-**Current step:** Phase 5 — Reports page (crop P&L with ROI / break-even, stage + category summaries, overall profit); then Settings (categories / items / guidance editor).
+**Current step:** Settings page (categories / items / stage guidance editor, sign out). Then owner uses the app for a season (Phase 6).
 
 ## Phase 0 — Setup
 - [x] Requirements analysis and v1 scope agreed
@@ -45,10 +45,11 @@ Update at the end of every session: tick what is done, set the current step, add
 - [x] Dashboard (Home): farm card + switcher, This month / This year / All time, net profit / income / expense with per acre, crop / farm / machinery net, expense by stage or category, expense vs income last 6 months, crops summary, overdue & due-soon tasks
 
 ## Phase 5 — Reports
-- [ ] Crop profit (v_crop_profit)
-- [ ] Spend per stage chart (v_crop_stage_summary)
-- [ ] Category summary (v_category_summary)
-- [ ] Overall profit: crop + farm + machinery (v_overall_profit)
+- [x] Reports page: crop P&L (revenue, expense, profit with per acre, ROI, cost-benefit, net yield, avg price, profit / qtl, break-even yield + price)
+- [x] Expense by stage table (v_crop_stage_summary) + crop panel / dashboard bars
+- [x] By category table (v_category_summary) + crops compared per acre
+- [x] Overall profit by year: crop + farm + machinery (v_overall_profit)
+- [x] CSV download per table + all entries CSV (Excel-ready, UTF-8 BOM); print layout (nav hidden)
 
 ## Phase 6 — Release
 - [ ] Confirm live deploy on GitHub Pages with Supabase secrets set
@@ -72,3 +73,4 @@ Update at the end of every session: tick what is done, set the current step, add
 - 2026-11-03 — Step 3: expense / income entry + crop panel spend by stage and entries. Live DB sample data loaded for the owner: Sorathur Farm (5 ac), Power Tiller, Paddy White Ponni Samba 2026 (5 ac, stage Seeding), 10 crop expenses from reference app / Excel (₹29,830), machinery diesel ₹2,000 + sample hire-out ₹3,000, sample farm land tax ₹600, 3 own tasks + 34 guidance tasks. Entries marked 'Sample entry' in remarks are invented.
 - 2026-11-03 — Step 4: shared EntriesPage (crop / farm / machine), crop panel shows latest 5 + View all, Farm cards with farm totals, Machinery list with expense / income / net. Responsive check at 360/768/1280.
 - 2026-11-03 — Step 5: Dashboard + Tasks. Tasks added to the sidebar (phone reaches it from Home and the crop panel). Responsive check at 360/768/1280.
+- 2026-11-03 — Reports page with CSV export and print. Responsive check at 360/768/1280 (category table: badge under name, % hidden on phone).

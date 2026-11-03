@@ -24,9 +24,9 @@ export default function AppLayout() {
     }`
 
   return (
-    <div className="min-h-dvh bg-stone-50 text-stone-900 md:pl-20 lg:pl-56">
+    <div className="min-h-dvh bg-stone-50 text-stone-900 md:pl-20 lg:pl-56 print:bg-white print:pl-0">
       {/* Sidebar — tablet and desktop */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-20 flex-col border-r border-stone-200 bg-white px-2 py-4 md:flex lg:w-56 lg:px-3">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-20 print:!hidden flex-col border-r border-stone-200 bg-white px-2 py-4 md:flex lg:w-56 lg:px-3">
         <Link to="/" className="mb-6 flex items-center justify-center gap-2 lg:justify-start lg:px-2">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-green-700 text-white">
             <Sprout aria-hidden className="h-5 w-5" />
@@ -56,7 +56,7 @@ export default function AppLayout() {
       </aside>
 
       {/* Top bar — all sizes */}
-      <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-stone-200 bg-white/95 px-4 pt-[env(safe-area-inset-top)] backdrop-blur md:h-16 md:px-6">
+      <header className="sticky top-0 z-20 flex h-14 print:hidden items-center justify-between gap-3 border-b border-stone-200 bg-white/95 px-4 pt-[env(safe-area-inset-top)] backdrop-blur md:h-16 md:px-6">
         <h1 className="truncate text-lg font-semibold">{title}</h1>
         <div className="flex items-center gap-1">
           {email && <span className="hidden max-w-56 truncate text-sm text-stone-500 sm:block">{email}</span>}
@@ -81,7 +81,7 @@ export default function AppLayout() {
       <button
         onClick={() => setAddOpen(true)}
         aria-label="Add"
-        className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-30 grid h-14 w-14 place-items-center rounded-full bg-green-700 text-white shadow-lg hover:bg-green-800 md:hidden"
+        className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-30 grid print:hidden h-14 w-14 place-items-center rounded-full bg-green-700 text-white shadow-lg hover:bg-green-800 md:hidden"
       >
         <Plus className="h-6 w-6" />
       </button>
@@ -89,7 +89,7 @@ export default function AppLayout() {
       {/* Bottom tab bar — phone only */}
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 print:hidden border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         {mainNav.map(({ to, label, icon: Icon }) => (
           <NavLink
