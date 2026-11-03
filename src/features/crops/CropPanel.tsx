@@ -14,15 +14,19 @@ import { useCropStages } from './data'
 import TransactionForm, { type EntryStart } from '../transactions/TransactionForm'
 import { EntryList, StageSpend } from '../transactions/CropEntries'
 import { useCropTransactions, type TxRow } from '../transactions/data'
+import TaskItem from '../tasks/TaskItem'
+import TaskForm from '../tasks/TaskForm'
+import { useTasks, type TaskRow } from '../tasks/data'
 
 type Profit = { revenue: number | null; expense: number | null; profit: number | null }
-type TaskCount = { status: string }
 
 // Crop detail: full screen on phone, right side panel from md up.
 export default function CropPanel({ crop, farm, onClose, onEdit, onChanged }: { crop: Crop; farm: Farm | undefined; onClose: () => void; onEdit: () => void; onChanged: () => void }) {
   const stages = useCropStages(crop.id)
   const profit = useRows<Profit>(() => supabase.from('v_crop_profit').select('revenue, expense, profit').eq('crop_id', crop.id).maybeSingle(), [crop.id])
-  const tasks = useRows<TaskCount[]>(() => supabase.from('tasks').select('status').eq('crop_id', crop.id), [crop.id])
+  const [taskKey, setTaskKey] = useState(0)
+  const tasks = useTasks({ cropId: crop.id }, taskKey)
+  const [openTask, setOpenTask] = useState<TaskRow | 'new' | null>(null)
   const txs = useCropTransactions(crop.id)
   const [entry, setEntry] = useState<{ start: EntryStart; tx: TxRow | null } | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -104,10 +108,10 @@ export default function CropPanel({ crop, farm, onClose, onEdit, onChanged }: { 
             <Wallet aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-green-700" />
             <div><p className="text-xs text-stone-600">Income</p><AmountWithPerAcre amount={profit.data?.revenue} acres={crop.area_acres} /></div>
           </div>
-          <div className={`${tile} border-amber-100 bg-amber-50`}>
+          <Link to={`/tasks?crop=${crop.id}`} className={`${tile} border-amber-100 bg-amber-50`}>
             <ListChecks aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
             <div className="text-sm"><p className="text-xs text-stone-600">Tasks</p><p><strong>{open}</strong> open · <strong>{done}</strong> done</p></div>
-          </div>
+          </Link>
           <div className={`${tile} border-sky-100 bg-sky-50`}>
             <Wheat aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-sky-700" />
             <div className="text-sm"><p className="text-xs text-stone-600">Net yield</p><p className="font-semibold">{crop.net_yield_qtl == null ? '—' : `${crop.net_yield_qtl} qtl`}</p></div>
@@ -118,6 +122,23 @@ export default function CropPanel({ crop, farm, onClose, onEdit, onChanged }: { 
           <p className="text-xs text-stone-500">Cash profit</p>
           <AmountWithPerAcre amount={profit.data?.profit} acres={crop.area_acres} size="lg" />
         </div>
+
+        <section className="mt-6">
+          <div className="mb-1 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-stone-800">This stage's tasks</h3>
+            <button onClick={() => setOpenTask('new')} className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-green-800 hover:bg-green-50">+ Task</button>
+          </div>
+          {(() => {
+            const stageTasks = (tasks.data ?? []).filter((t) => t.crop_stage_id === crop.current_stage_id)
+            return stageTasks.length ? (
+              <ul className="divide-y divide-stone-100 rounded-2xl border border-stone-200">
+                {stageTasks.map((t) => <TaskItem key={t.id} task={t} showPlace={false} onChanged={() => setTaskKey((k) => k + 1)} onOpen={setOpenTask} />)}
+              </ul>
+            ) : (
+              <p className="text-sm text-stone-500">No tasks for this stage.</p>
+            )
+          })()}
+        </section>
 
         <section className="mt-6">
           <h3 className="mb-3 text-sm font-semibold text-stone-800">Expense by stage</h3>
@@ -140,6 +161,14 @@ export default function CropPanel({ crop, farm, onClose, onEdit, onChanged }: { 
         </section>
       </Sheet>
 
+      {openTask && (
+        <TaskForm
+          task={openTask === 'new' ? null : openTask}
+          start={{ scope: 'crop', cropId: crop.id, stageId: crop.current_stage_id ?? undefined }}
+          onClose={() => setOpenTask(null)}
+          onSaved={() => setTaskKey((k) => k + 1)}
+        />
+      )}
       {entry && (
         <TransactionForm start={entry.start} tx={entry.tx} onClose={() => setEntry(null)} onSaved={refreshMoney} />
       )}

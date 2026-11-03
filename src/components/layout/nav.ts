@@ -11,6 +11,9 @@ export const mainNav: NavItem[] = [
   { to: '/reports', label: 'Reports', icon: ChartColumn },
 ]
 
+// Sidebar-only extras (phone reaches Tasks from Home and the crop panel).
+export const sideExtraNav: NavItem[] = [{ to: '/tasks', label: 'Tasks', icon: ListTodo }]
+
 export const settingsNav: NavItem = { to: '/settings', label: 'Settings', icon: Settings }
 
 // "+" quick-add actions.
@@ -27,7 +30,7 @@ export function titleFor(pathname: string): string {
     const item = quickAdd.find((q) => q.to === pathname)
     return item ? `Add ${item.label.toLowerCase()}` : 'Add'
   }
-  const all = [...mainNav, settingsNav]
+  const all = [...mainNav, ...sideExtraNav, settingsNav]
   const match = all
     .filter((n) => (n.to === '/' ? pathname === '/' : pathname.startsWith(n.to)))
     .sort((a, b) => b.to.length - a.to.length)[0]

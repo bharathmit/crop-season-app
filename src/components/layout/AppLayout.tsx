@@ -4,7 +4,7 @@ import { LogOut, Plus, Sprout } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../app/auth'
 import QuickAddSheet from './QuickAddSheet'
-import { mainNav, settingsNav, titleFor } from './nav'
+import { mainNav, settingsNav, sideExtraNav, titleFor } from './nav'
 
 // Responsive shell (CLAUDE.md › Responsive UI):
 //  phone  (< md): top bar + bottom tab bar + floating "+" button
@@ -42,7 +42,7 @@ export default function AppLayout() {
           <span className="sr-only lg:hidden">Add</span>
         </button>
         <nav className="flex flex-1 flex-col gap-1" aria-label="Main">
-          {mainNav.map(({ to, label, icon: Icon }) => (
+          {[...mainNav.slice(0, 4), ...sideExtraNav, ...mainNav.slice(4)].map(({ to, label, icon: Icon }) => (
             <NavLink key={to} to={to} end={to === '/'} className={sideLink}>
               <Icon aria-hidden className="h-5 w-5 shrink-0" />
               {label}

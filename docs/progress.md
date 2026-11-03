@@ -2,7 +2,7 @@
 
 Update at the end of every session: tick what is done, set the current step, add a dated line to the session log.
 
-**Current step:** Phase 4/5 — Dashboard (home) + Tasks screens + Reports.
+**Current step:** Phase 5 — Reports page (crop P&L with ROI / break-even, stage + category summaries, overall profit); then Settings (categories / items / guidance editor).
 
 ## Phase 0 — Setup
 - [x] Requirements analysis and v1 scope agreed
@@ -41,8 +41,8 @@ Update at the end of every session: tick what is done, set the current step, add
 
 ## Phase 4 — Tasks
 - [x] Migration 0003_tasks.sql (tasks replace crop_checklist) — tested + applied to Supabase
-- [ ] Tasks per crop stage / farm / machine (add, tick, due date)
-- [ ] Dashboard: due today / overdue
+- [x] Tasks page (/tasks): Open / Overdue / Due today / Next 7 days / Done chips, All / Crops / Farm / Machines, grouped by crop › stage, farm, machine; tick; add / edit / delete (TaskForm; quick add /add/task); crop panel 'This stage's tasks' + tasks tile → /tasks?crop=
+- [x] Dashboard (Home): farm card + switcher, This month / This year / All time, net profit / income / expense with per acre, crop / farm / machinery net, expense by stage or category, expense vs income last 6 months, crops summary, overdue & due-soon tasks
 
 ## Phase 5 — Reports
 - [ ] Crop profit (v_crop_profit)
@@ -71,3 +71,4 @@ Update at the end of every session: tick what is done, set the current step, add
 - 2026-11-03 — Phase 2 screens: Farm, Machinery, Crops list + panel + stage editor; shared UI (Sheet, form, Chips, EmptyState, AmountWithPerAcre, lib/format, lib/perAcre, lib/useRows). Responsive check at 360/768/1280 with Playwright-mocked Supabase data; fixed stage editor wrap on phone and crop table columns.
 - 2026-11-03 — Step 3: expense / income entry + crop panel spend by stage and entries. Live DB sample data loaded for the owner: Sorathur Farm (5 ac), Power Tiller, Paddy White Ponni Samba 2026 (5 ac, stage Seeding), 10 crop expenses from reference app / Excel (₹29,830), machinery diesel ₹2,000 + sample hire-out ₹3,000, sample farm land tax ₹600, 3 own tasks + 34 guidance tasks. Entries marked 'Sample entry' in remarks are invented.
 - 2026-11-03 — Step 4: shared EntriesPage (crop / farm / machine), crop panel shows latest 5 + View all, Farm cards with farm totals, Machinery list with expense / income / net. Responsive check at 360/768/1280.
+- 2026-11-03 — Step 5: Dashboard + Tasks. Tasks added to the sidebar (phone reaches it from Home and the crop panel). Responsive check at 360/768/1280.

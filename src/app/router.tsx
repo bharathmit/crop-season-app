@@ -8,6 +8,8 @@ import MachineryPage from '../features/machinery/MachineryPage'
 import CropsPage from '../features/crops/CropsPage'
 import AddEntryPage from '../features/transactions/AddEntryPage'
 import EntriesPage from '../features/transactions/EntriesPage'
+import HomePage from '../features/dashboard/HomePage'
+import TasksPage from '../features/tasks/TasksPage'
 
 // Each placeholder is replaced as its feature is built (see docs/progress.md, docs/ui-plan.md).
 export const router = createBrowserRouter(
@@ -21,7 +23,8 @@ export const router = createBrowserRouter(
         </RequireAuth>
       ),
       children: [
-        { index: true, element: <PlaceholderPage title="Dashboard" /> },
+        { index: true, element: <HomePage /> },
+        { path: 'tasks', element: <TasksPage /> },
         { path: 'crops', element: <CropsPage /> },
         { path: 'crops/:cropId', element: <CropsPage /> },
         { path: 'crops/:cropId/entries', element: <EntriesPage scope="crop" /> },
