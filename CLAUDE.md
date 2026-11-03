@@ -25,21 +25,23 @@ Responsive web app for one farmer (Bharath) to track **crop-wise expenses and ca
 - `npm run dev` — local dev server
 - `npm run build` — type-check + production build (must pass before a step is marked done)
 - `npm run lint` — oxlint
+- `npm run test:db` — apply migrations to in-memory Postgres and check views, guards, RLS (run after any SQL change)
 
 ## Folder layout
 ```
 src/
   app/            router and app-wide setup
   components/     shared UI (layout/, form controls, tables)
-  features/       one folder per feature: plots, seasons, crops, stages,
-                  crop-cycles, expenses, income, checklist, reports
+  features/       one folder per feature: farms, machinery, crops, stages,
+                  transactions (expense + income entry), checklist, reports
                   (each holds its pages, components, and data hooks)
   lib/            supabase client, formatters (₹, dates), helpers
   pages/          generic pages (placeholder, not-found)
   types/          shared domain types
 supabase/
   migrations/     SQL migrations, numbered: 0001_init.sql, 0002_...
-  seed/           seed data (paddy stage template + checklist)
+  seed/           (unused — defaults load via seed_my_defaults() in 0002)
+  tests/          schema-test.mjs (npm run test:db)
 docs/             requirements, decisions, data model, progress, stage templates
 .claude/commands/ project slash commands (/update-progress, /next-task)
 ```

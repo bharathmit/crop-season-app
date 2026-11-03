@@ -1,6 +1,6 @@
 # Data model
 
-**Status: DRAFT v3 — awaiting owner review. No migration written yet.** 9 tables + 4 views + 1 storage bucket.
+**Status: APPROVED v3 (2026-11-03). Implemented in `supabase/migrations/0001_init.sql` + `0002_seed_defaults.sql`; tested with `npm run test:db`.** 9 tables + 4 views + 1 storage bucket.
 
 Changes from v2 (owner review 2026-11-03):
 - `plots` → **`farms`**, with its own expense and income entries.
@@ -105,7 +105,7 @@ Seed: `docs/seed/expense-items.md`.
 | net_amount | numeric(12,2) generated | expense: amount − support · income: amount + support |
 | party | text | supplier (expense) / buyer, mill (income) |
 | invoice_no | text | |
-| paid_by | text | **open question** |
+| paid_by | text | free text (who paid or how) |
 | paid_on | date | |
 | remarks | text | |
 | bill_path | text | photo in private `bills` bucket |

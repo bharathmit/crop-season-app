@@ -4,6 +4,8 @@ Newest first. Each entry: date, decision, reason. Change a decision only with th
 
 | Date | Decision | Reason |
 | --- | --- | --- |
+| 2026-11-03 | Data model v3 approved; `paid_by` kept as free text | Owner approved; Paid By meaning not specified |
+| 2026-11-03 | Default lists load per user via `seed_my_defaults()` called once after first login | Rows are user-owned and editable; seed needs `auth.uid()` |
 | 2026-11-03 | Data model v3: farms + machinery + crops each have expenses and income in one `transactions` table (scope crop / farm / machinery); crops, seasons, crop cycles and harvest merged into one `crops` table | Owner's request: fewer tables, farm and machinery costs in overall profit |
 | 2026-11-03 | Show per-acre value beside every crop-cycle amount, live while typing in entry forms | Owner's request; compare costs across plots of different size |
 | 2026-11-03 | Default stages for all crops: Preparation, Seeding, Transplanting, Growing, Fruiting, Harvesting, Post Harvest, Sold; editable per crop | Owner's list; one simple list fits all crops |
