@@ -23,6 +23,11 @@ See, for each crop cycle, what was spent, what was earned, the cash profit, and 
    - Crop cycle profit: total cost, total income, cash profit, cost per acre, cost per quintal
    - Spend per stage: amount and % per stage (bar chart) for a crop cycle
 
+## Per-acre display (all screens)
+- Every amount for a crop cycle shows its per-acre value next to it: amount ÷ the cycle's acres.
+- **While entering** an expense or income, per-acre updates live under the amount field (e.g. 6 acres, ₹9,000 → ₹1,500 / acre). Same for quantity × rate totals, subsidy and net.
+- Lists, stage totals, category totals, profit summary: show both total and per acre.
+
 ## Expense categories (seed)
 Land preparation · Seed and nursery · Labour · Machinery · Manure and nutrients · Bio-inputs · Plant protection · Irrigation · Harvest and post-harvest · Fixed / overhead
 

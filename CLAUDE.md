@@ -54,5 +54,6 @@ docs/             requirements, decisions, data model, progress, stage templates
 - Money in INR, stored as `numeric(12,2)`; display with `₹` and Indian grouping (`en-IN`).
 - Dates stored as `date` (ISO), displayed DD-MM-YYYY.
 - Areas in acres.
+- **Per-acre everywhere:** every money figure tied to a crop cycle (expense, subsidy, net, income, totals, profit) is shown with its per-acre value = amount ÷ crop cycle `area_acres`. In entry forms it updates live as the user types (e.g. 6 acres: ₹9,000 → ₹1,500 / acre). Use one shared helper/component (`lib/perAcre.ts`, `<AmountWithPerAcre>`).
 - Table and column names in snake_case; TS types in camelCase.
 - Every user-owned table has `user_id` + row-level security limiting rows to `auth.uid()`.
