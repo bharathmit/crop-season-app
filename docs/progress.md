@@ -2,7 +2,7 @@
 
 Update at the end of every session: tick what is done, set the current step, add a dated line to the session log.
 
-**Current step:** Phase 1 — owner review of data model Part 1 (crops, stages, expenses); then Part 2.
+**Current step:** Phase 1 — owner review of full data model draft (docs/data-model.md, docs/seed/expense-items.md).
 
 ## Phase 0 — Setup
 - [x] Requirements analysis and v1 scope agreed
@@ -48,3 +48,4 @@ Update at the end of every session: tick what is done, set the current step, add
 - 2026-11-02 — Added GitHub Pages auto-deploy workflow; router basename + Vite base path for Pages.
 - 2026-11-02 — Pushed to GitHub. Pending: owner sets Settings → Pages → Source = GitHub Actions, then re-run the deploy workflow.
 - 2026-11-03 — Default stage list agreed (Preparation → Sold, editable per crop). Paddy checklist remapped. Data model Part 1 drafted for review.
+- 2026-11-03 — Data model redrafted from owner's Excel tracker: category/item + stage on each expense, subsidy, income with govt bonus, harvest moisture, P&L metrics. Expense item seed list added.
