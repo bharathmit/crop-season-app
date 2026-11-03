@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowLeftRight, ArrowRight, Fence, ListTodo, Plus, Receipt, Sprout, Tractor, Wallet } from 'lucide-react'
 import MoneyTiles, { NetIcon, TILE } from '../../components/MoneyTiles'
 import PeriodFilter from '../../components/PeriodFilter'
+import Bars, { groupExpense } from '../../components/ExpenseBars'
 import EmptyState from '../../components/ui/EmptyState'
 import { Button, ErrorText } from '../../components/ui/form'
 import { formatAcres, formatINR, netClass, todayISO } from '../../lib/format'
@@ -26,34 +27,6 @@ type Line = {
 type CropProfit = { crop_id: string; crop_name: string; variety: string | null; season: string; season_year: number; area_acres: number; expense: number; revenue: number; profit: number; profit_per_acre: number | null }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-// Distinct colour per row (text + bar), in order.
-const PALETTE = [
-  ['text-red-700', 'bg-red-400'], ['text-orange-700', 'bg-orange-400'], ['text-amber-700', 'bg-amber-400'], ['text-lime-700', 'bg-lime-500'],
-  ['text-emerald-700', 'bg-emerald-500'], ['text-teal-700', 'bg-teal-500'], ['text-sky-700', 'bg-sky-500'], ['text-indigo-700', 'bg-indigo-400'],
-  ['text-violet-700', 'bg-violet-400'], ['text-pink-700', 'bg-pink-400'],
-] as const
-
-function Bars({ rows }: { rows: { label: string; value: number; extra: string }[] }) {
-  const max = Math.max(1, ...rows.map((r) => r.value))
-  if (!rows.length) return <p className="text-sm text-stone-500">No expenses in this period.</p>
-  return (
-    <ul className="space-y-3">
-      {rows.map((r, i) => {
-        const [text, bar] = PALETTE[i % PALETTE.length]
-        return (
-          <li key={r.label} className="text-sm">
-            <div className="flex items-baseline justify-between gap-2">
-              <span className={`truncate font-medium ${text}`}>{r.label}</span>
-              <span className="shrink-0"><span className={`font-semibold ${text}`}>{formatINR(r.value)}</span> <span className="text-xs text-stone-500">{r.extra}</span></span>
-            </div>
-            <div className="mt-1 h-2 rounded-full bg-white/80"><div className={`h-2 rounded-full ${bar}`} style={{ width: `${(r.value / max) * 100}%` }} /></div>
-          </li>
-        )
-      })}
-    </ul>
-  )
-}
 
 const card = 'rounded-2xl border border-stone-200 bg-white p-4'
 const tile = 'flex items-start gap-3 rounded-2xl border p-4'
@@ -106,17 +79,9 @@ export default function HomePage() {
 
   const split_rows = useMemo(() => {
     const exp = cropLines.filter((l) => l.entry_type === 'expense')
-    const total = exp.reduce((a, l) => a + Number(l.net_amount), 0)
-    const map = new Map<string, { value: number; order: number }>()
-    for (const l of exp) {
-      const key = split === 'stage' ? (l.stage?.name ?? '—') : (l.item?.category?.name ?? '—')
-      const cur = map.get(key) ?? { value: 0, order: split === 'stage' ? (l.stage?.sort_order ?? 99) : 0 }
-      cur.value += Number(l.net_amount)
-      map.set(key, cur)
-    }
-    return [...map.entries()]
-      .sort((a, b) => (split === 'stage' ? a[1].order - b[1].order : b[1].value - a[1].value))
-      .map(([label, v]) => ({ label, value: v.value, extra: `${total ? Math.round((v.value / total) * 1000) / 10 : 0}%` }))
+    return split === 'stage'
+      ? groupExpense(exp, (l) => Number(l.net_amount), (l) => l.stage?.name ?? '—', (l) => l.stage?.sort_order ?? 99)
+      : groupExpense(exp, (l) => Number(l.net_amount), (l) => l.item?.category?.name ?? '—')
   }, [cropLines, split])
 
   // 6 months of the selected crop, ending at its latest entry month.
@@ -184,22 +149,22 @@ export default function HomePage() {
         {/* Owner's colours: blue net profit (red / green amount), green income, red expense */}
         <div className={`${tile} col-span-2 lg:col-span-1 ${TILE.net.box}`}>
           <NetIcon net={income - expense} className="mt-0.5 h-5 w-5 shrink-0" />
-          <div className="min-w-0"><p className="text-xs font-bold text-stone-800">Net profit<span className="block text-[11px] font-semibold text-stone-600">(crop + farm + machinery)</span></p><p className={`text-xl font-semibold ${netClass(income - expense)}`}>{formatINR(income - expense)}</p></div>
+          <div className="min-w-0 flex-1"><p className="text-xs font-bold text-stone-800">Net profit<span className="block text-[11px] font-semibold text-stone-600">(crop + farm + machinery)</span></p><p className={`mt-2 text-center text-xl font-semibold ${netClass(income - expense)}`}>{formatINR(income - expense)}</p></div>
         </div>
         <div className={`${tile} ${TILE.expense.box}`}>
           <Receipt aria-hidden className={`mt-0.5 h-5 w-5 shrink-0 ${TILE.expense.icon}`} />
-          <div className="min-w-0"><p className="text-xs font-bold text-stone-800">Expense</p><p className="truncate text-base font-semibold text-stone-900">{formatINR(expense)}</p></div>
+          <div className="min-w-0 flex-1"><p className="text-xs font-bold text-stone-800">Expense</p><p className="mt-2 truncate text-center text-base font-semibold text-stone-900">{formatINR(expense)}</p></div>
         </div>
         <div className={`${tile} ${TILE.income.box}`}>
           <Wallet aria-hidden className={`mt-0.5 h-5 w-5 shrink-0 ${TILE.income.icon}`} />
-          <div className="min-w-0"><p className="text-xs font-bold text-stone-800">Income</p><p className="truncate text-base font-semibold text-stone-900">{formatINR(income)}</p></div>
+          <div className="min-w-0 flex-1"><p className="text-xs font-bold text-stone-800">Income</p><p className="mt-2 truncate text-center text-base font-semibold text-stone-900">{formatINR(income)}</p></div>
         </div>
         <Link to="/tasks" className={`${tile} col-span-2 border-amber-100 bg-amber-50 lg:col-span-1`}>
           <ListTodo aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-xs font-bold text-stone-800">Open tasks</p>
-            <p className="text-xl font-semibold">{farmTasks.length}</p>
-            <p className="text-xs font-bold text-stone-600"><span className={overdue.length ? 'text-red-700' : ''}>{overdue.length} overdue</span> · <span className="text-blue-700">{dueSoon.length} due soon</span></p>
+            <p className="mt-2 text-center text-xl font-semibold">{farmTasks.length}</p>
+            <p className="mt-1 text-center text-xs font-bold text-stone-600"><span className={overdue.length ? 'text-red-700' : ''}>{overdue.length} overdue</span> · <span className="text-blue-700">{dueSoon.length} due soon</span></p>
           </div>
         </Link>
       </div>
@@ -214,7 +179,7 @@ export default function HomePage() {
         ] as const).map(([label, s, Icon, box, icon, to]) => (
           <Link key={s} to={to} className={`min-w-0 rounded-xl border px-2 py-2 sm:px-3 ${box}`}>
             <span className="flex items-start gap-1 text-xs font-bold leading-tight text-stone-800"><Icon aria-hidden className={`h-4 w-4 shrink-0 ${icon}`} /><span>{label} net</span></span>
-            <span className={`mt-0.5 block truncate text-sm font-semibold ${netClass(netOf(s))}`}>{formatINR(netOf(s))}</span>
+            <span className={`mt-2 block truncate text-center text-sm font-semibold ${netClass(netOf(s))}`}>{formatINR(netOf(s))}</span>
           </Link>
         ))}
       </div>
@@ -242,7 +207,7 @@ export default function HomePage() {
                         <span className="shrink-0 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">{stageOf(c.crop_id) ?? '—'}</span>
                       </div>
                       <p className="-mt-1 mb-2 text-xs text-stone-500">{c.season} {c.season_year} · {formatAcres(c.area_acres)}</p>
-                      <MoneyTiles expense={Number(c.expense)} income={Number(c.revenue)} netHref={`/crops/${c.crop_id}`} />
+                      <MoneyTiles expense={Number(c.expense)} income={Number(c.revenue)} acres={Number(c.area_acres)} netHref={`/crops/${c.crop_id}`} center />
                     </div>
                   </li>
                 )

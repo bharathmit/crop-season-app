@@ -38,7 +38,8 @@ function useTarget(scope: Scope, id: string) {
 }
 
 // Expense / income list for one crop, farm or machine (CLAUDE.md: cards on phone, table from md).
-export default function EntriesPage({ scope }: { scope: Scope }) {
+// `embedded` (crop page Entries tab): no back arrow / title, only the Expense / Income buttons.
+export default function EntriesPage({ scope, embedded = false, onSaved }: { scope: Scope; embedded?: boolean; onSaved?: () => void }) {
   const params = useParams()
   const id = (scope === 'crop' ? params.cropId : scope === 'farm' ? params.farmId : params.machineId) ?? ''
   const target = useTarget(scope, id)
@@ -97,8 +98,8 @@ export default function EntriesPage({ scope }: { scope: Scope }) {
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className={`mb-4 flex flex-wrap items-center gap-3 ${embedded ? 'justify-end' : 'justify-between'}`}>
+        {!embedded && <div className="flex min-w-0 items-center gap-2">
           <Link to={target.data?.back ?? '/'} aria-label="Back" className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-stone-600 hover:bg-stone-100">
             <ArrowLeft className="h-5 w-5" />
           </Link>
@@ -106,7 +107,7 @@ export default function EntriesPage({ scope }: { scope: Scope }) {
             <h2 className="truncate text-lg font-semibold">{target.data?.name ?? '…'}</h2>
             <p className="truncate text-sm text-stone-500">{target.data?.sub}</p>
           </div>
-        </div>
+        </div>}
         <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
           <Button onClick={() => setEntry({ start: startFor('expense'), tx: null })}><Plus className="h-4 w-4" />Expense</Button>
           <Button tone="secondary" onClick={() => setEntry({ start: startFor('income'), tx: null })}><Plus className="h-4 w-4" />Income</Button>
@@ -218,7 +219,7 @@ export default function EntriesPage({ scope }: { scope: Scope }) {
       )}
 
       {entry && (
-        <TransactionForm start={entry.start} tx={entry.tx} onClose={() => setEntry(null)} onSaved={txs.reload} />
+        <TransactionForm start={entry.start} tx={entry.tx} onClose={() => setEntry(null)} onSaved={() => { txs.reload(); onSaved?.() }} />
       )}
     </>
   )

@@ -1,18 +1,26 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import Chips from '../../components/ui/Chips'
 import MoneyTiles from '../../components/MoneyTiles'
+import PeriodFilter from '../../components/PeriodFilter'
 import EmptyState, { PageHeader } from '../../components/ui/EmptyState'
 import { Button, ErrorText } from '../../components/ui/form'
-import { daysSince, formatAcres, formatDate, formatINR, netClass } from '../../lib/format'
+import { daysSince, formatAcres, formatDate, formatINR, netClass, todayISO } from '../../lib/format'
+import { usePeriod, type DateRange } from '../../lib/period'
 import { supabase } from '../../lib/supabase'
 import { useRows } from '../../lib/useRows'
-import { DEFAULT_STAGES } from '../../types/domain'
 import { useFarms } from '../farms/data'
 import CropForm from './CropForm'
-import CropPanel from './CropPanel'
+import CropPage from './CropPage'
 import { useCrops, type CropWithStage } from './data'
+
+// A crop is in the date range if its season (sowing / added date → harvest date, or today while growing) overlaps it.
+function cropInRange(c: CropWithStage, r: DateRange) {
+  const start = (c.sowing_date ?? c.created_at).slice(0, 10)
+  const end = (c.harvest_date ?? todayISO()).slice(0, 10)
+  return (!r.to || start <= r.to) && (!r.from || end >= r.from)
+}
 
 function StageChip({ name }: { name: string | undefined }) {
   return <span className="inline-block max-w-full truncate whitespace-nowrap rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">{name ?? '—'}</span>
@@ -30,30 +38,23 @@ export default function CropsPage() {
   const { cropId } = useParams()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
-  const [stage, setStage] = useState('all')
+  const [tab, setTab] = useState<'active' | 'closed'>('active')
+  const period = usePeriod('year')
   const [editing, setEditing] = useState<CropWithStage | null>(null)
   const adding = params.get('new') === '1'
 
   const list = crops.data ?? []
   const farmById = (id: string) => farms.data?.find((f) => f.id === id)
 
-  const chips = useMemo(() => {
-    const live = list.filter((c) => c.status !== 'closed')
-    const names = [...DEFAULT_STAGES] as string[]
-    for (const c of live) if (c.current_stage && !names.includes(c.current_stage.name)) names.push(c.current_stage.name)
-    return [
-      { key: 'all', label: 'All', count: live.length },
-      ...names.map((n) => ({ key: n, label: n, count: live.filter((c) => c.current_stage?.name === n).length })),
-      { key: 'closed', label: 'Closed', count: list.length - live.length },
-    ]
-  }, [list])
-
-  const shown =
-    stage === 'all'
-      ? list.filter((c) => c.status !== 'closed')
-      : stage === 'closed'
-        ? list.filter((c) => c.status === 'closed')
-        : list.filter((c) => c.status !== 'closed' && c.current_stage?.name === stage)
+  // Active / Closed tabs, both narrowed by the date range.
+  const inPeriod = list.filter((c) => cropInRange(c, period.range))
+  const live = inPeriod.filter((c) => c.status !== 'closed')
+  const closed = inPeriod.filter((c) => c.status === 'closed')
+  const chips = [
+    { key: 'active', label: 'Active', count: live.length },
+    { key: 'closed', label: 'Closed', count: closed.length },
+  ]
+  const shown = tab === 'active' ? live : closed
 
   const selected = cropId ? list.find((c) => c.id === cropId) : undefined
   const knownNames = Array.from(new Set(['Paddy', ...list.map((c) => c.crop_name)]))
@@ -65,12 +66,40 @@ export default function CropsPage() {
     if (adding) setParams({})
   }
 
+  const form = (adding || editing) && farms.data && (
+    <CropForm
+      crop={editing}
+      farms={farms.data}
+      knownNames={knownNames}
+      onClose={closeForm}
+      onSaved={(id) => {
+        setEditing(null)
+        crops.reload()
+        navigate(id ? `/crops/${id}` : '/crops', { replace: true })
+      }}
+    />
+  )
+
+  // Crop page (Summary / Entries / Tasks) replaces the list.
+  if (selected) {
+    return (
+      <>
+        <CropPage crop={selected} farm={farmById(selected.farm_id)} onEdit={() => setEditing(selected)} onChanged={crops.reload} />
+        {form}
+      </>
+    )
+  }
+
   return (
     <>
-      <PageHeader
-        subtitle="One crop = one crop on one farm in one season."
-        action={!noFarm && <Button onClick={openNew}><Plus className="h-4 w-4" />Add crop</Button>}
-      />
+      <PageHeader subtitle="One crop = one crop on one farm in one season." />
+      {/* Date range next to Add crop: shows crops growing in that period */}
+      {!noFarm && (
+        <div className="mb-1 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <PeriodFilter period={period} />
+          <Button onClick={openNew} className="md:shrink-0"><Plus className="h-4 w-4" />Add crop</Button>
+        </div>
+      )}
       <ErrorText>{crops.error ?? farms.error}</ErrorText>
 
       {noFarm ? (
@@ -81,9 +110,9 @@ export default function CropsPage() {
         <EmptyState title="No crops yet" text="Add this season's crop. It gets the 8 stages and the paddy checklist as tasks." action={<Button onClick={openNew}><Plus className="h-4 w-4" />Add crop</Button>} />
       ) : (
         <>
-          <div className="mb-4"><Chips label="Crop stage" chips={chips} value={stage} onChange={setStage} /></div>
+          <div className="mb-4"><Chips label="Crop status" chips={chips} value={tab} onChange={(k) => setTab(k as 'active' | 'closed')} /></div>
 
-          {!shown.length && <p className="rounded-2xl bg-white p-6 text-center text-sm text-stone-500">No crops in this stage.</p>}
+          {!shown.length && <p className="rounded-2xl bg-white p-6 text-center text-sm text-stone-500">{tab === 'active' ? 'No active crops in this period.' : 'No closed crops in this period.'}</p>}
 
           {/* Phone: cards */}
           <ul className="space-y-3 md:hidden">
@@ -151,22 +180,7 @@ export default function CropsPage() {
         </>
       )}
 
-      {selected && !editing && (
-        <CropPanel crop={selected} farm={farmById(selected.farm_id)} onClose={() => navigate('/crops')} onEdit={() => setEditing(selected)} onChanged={crops.reload} />
-      )}
-      {(adding || editing) && farms.data && (
-        <CropForm
-          crop={editing}
-          farms={farms.data}
-          knownNames={knownNames}
-          onClose={closeForm}
-          onSaved={(id) => {
-            setEditing(null)
-            crops.reload()
-            navigate(id ? `/crops/${id}` : '/crops', { replace: true })
-          }}
-        />
-      )}
+      {form}
     </>
   )
 }

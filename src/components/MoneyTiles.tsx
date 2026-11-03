@@ -17,12 +17,13 @@ export const NetIcon = ({ net, className = '' }: { net: number; className?: stri
 
 // Expense / Income / Net profit as three small tiles. `suffix` labels the period, e.g. "(2026)".
 // `acres` adds a per-acre line (crops only). `netHref` makes the Net tile a link.
-export default function MoneyTiles({ expense, income, suffix = '', acres, netHref }: { expense: number; income: number; suffix?: string; acres?: number; netHref?: string }) {
+// `center` centres the amounts with more space under the label (Home).
+export default function MoneyTiles({ expense, income, suffix = '', acres, netHref, center = false }: { expense: number; income: number; suffix?: string; acres?: number; netHref?: string; center?: boolean }) {
   const net = income - expense
   const pa = (v: number) => {
     if (acres == null) return null
     const x = perAcre(v, acres)
-    return x == null ? null : <span className="block text-[11px] text-stone-500">{formatINR(x)}/ac</span>
+    return x == null ? null : <span className={`block text-[11px] text-stone-500 ${center ? 'text-center' : ''}`}>{formatINR(x)}/ac</span>
   }
   const head = (icon: ReactNode, t: string) => (
     <span className="flex items-start gap-1 text-[11px] leading-tight text-stone-600">
@@ -30,13 +31,14 @@ export default function MoneyTiles({ expense, income, suffix = '', acres, netHre
       <span>{t}{suffix ? <> <span className="whitespace-nowrap">{suffix}</span></> : null}</span>
     </span>
   )
+  const amt = center ? 'mt-1.5 text-center' : 'mt-0.5'
   const box = 'block min-w-0 rounded-xl border px-2 py-2 sm:px-2.5'
   const E = TILE.expense
   const I = TILE.income
   const netBody = (
     <>
       {head(<NetIcon net={net} className="h-3.5 w-3.5 shrink-0" />, netHref ? 'Net profit →' : 'Net profit')}
-      <span className={`mt-0.5 block truncate text-[13px] font-semibold tracking-tight sm:text-sm sm:tracking-normal ${netClass(net)}`}>{formatINR(net)}</span>
+      <span className={`${amt} block truncate text-[13px] font-semibold tracking-tight sm:text-sm sm:tracking-normal ${netClass(net)}`}>{formatINR(net)}</span>
       {pa(net)}
     </>
   )
@@ -44,12 +46,12 @@ export default function MoneyTiles({ expense, income, suffix = '', acres, netHre
     <div className="grid grid-cols-3 gap-2">
       <div className={`${box} ${E.box}`}>
         {head(<E.Icon aria-hidden className={`h-3.5 w-3.5 shrink-0 ${E.icon}`} />, 'Expense')}
-        <span className="mt-0.5 block truncate text-[13px] font-semibold tracking-tight sm:text-sm sm:tracking-normal text-stone-900">{formatINR(expense)}</span>
+        <span className={`${amt} block truncate text-[13px] font-semibold tracking-tight sm:text-sm sm:tracking-normal text-stone-900`}>{formatINR(expense)}</span>
         {pa(expense)}
       </div>
       <div className={`${box} ${I.box}`}>
         {head(<I.Icon aria-hidden className={`h-3.5 w-3.5 shrink-0 ${I.icon}`} />, 'Income')}
-        <span className="mt-0.5 block truncate text-[13px] font-semibold tracking-tight sm:text-sm sm:tracking-normal text-stone-900">{formatINR(income)}</span>
+        <span className={`${amt} block truncate text-[13px] font-semibold tracking-tight sm:text-sm sm:tracking-normal text-stone-900`}>{formatINR(income)}</span>
         {pa(income)}
       </div>
       {netHref ? (
