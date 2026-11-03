@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { MapPin, Pencil, Plus } from 'lucide-react'
 import AmountWithPerAcre from '../../components/AmountWithPerAcre'
+import Chips from '../../components/ui/Chips'
 import { periodRange } from '../../lib/period'
 import { useScopeTotals } from '../transactions/data'
 import EmptyState, { PageHeader } from '../../components/ui/EmptyState'
@@ -17,9 +18,13 @@ export default function FarmsPage() {
   const year = yearRange.from?.slice(0, 4)
   const { totals } = useScopeTotals('farm', yearRange) // current year
   const [editing, setEditing] = useState<Farm | null | 'new'>(null)
-  const [showInactive, setShowInactive] = useState(false)
-  const inactiveCount = farms?.filter((x) => !x.is_active).length ?? 0
-  const shown = farms?.filter((x) => x.is_active || showInactive) ?? []
+  // Tabs like Machinery: In use (default) / Not in use.
+  const [status, setStatus] = useState<'active' | 'inactive'>('active')
+  const chips = [
+    { key: 'active', label: 'In use', count: farms?.filter((x) => x.is_active).length ?? 0 },
+    { key: 'inactive', label: 'Not in use', count: farms?.filter((x) => !x.is_active).length ?? 0 },
+  ]
+  const shown = farms?.filter((x) => x.is_active === (status === 'active')) ?? []
 
   const close = () => setEditing(null)
   const saved = () => {
@@ -44,6 +49,8 @@ export default function FarmsPage() {
         />
       ) : (
         <>
+        <div className="mb-4"><Chips label="Farm status" chips={chips} value={status} onChange={(k) => setStatus(k as 'active' | 'inactive')} /></div>
+        {!shown.length && <p className="text-sm text-stone-500">{status === 'active' ? 'No farms in use.' : 'No farms marked not in use.'}</p>}
         <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
           {shown.map((farm) => (
             <li key={farm.id} className="rounded-2xl border border-stone-200 bg-white p-4">
@@ -75,11 +82,6 @@ export default function FarmsPage() {
             </li>
           ))}
         </ul>
-        {inactiveCount > 0 && (
-          <button onClick={() => setShowInactive((v) => !v)} className="mt-3 min-h-11 text-sm font-medium text-green-800">
-            {showInactive ? 'Hide farms not in use' : `Show farms not in use (${inactiveCount})`}
-          </button>
-        )}
         </>
       )}
       {editing && <FarmForm farm={editing === 'new' ? null : editing} onClose={close} onSaved={saved} />}
