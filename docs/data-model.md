@@ -1,6 +1,6 @@
 # Data model
 
-**Status: DRAFT — awaiting owner review. No migration written yet.** Based on the owner's Excel paddy tracker (expense sheet, income sheet, P&L summary).
+**Status: DRAFT — awaiting owner review. No migration written yet.** 12 tables + 3 views + 1 storage bucket. Based on the owner's Excel paddy tracker (expense sheet, income sheet, P&L summary).
 
 Every table has `id uuid pk default gen_random_uuid()`, `user_id uuid not null default auth.uid()`, `created_at timestamptz default now()`, and row-level security `user_id = auth.uid()`. Omitted below for brevity.
 
@@ -111,6 +111,27 @@ Per-acre and % of total are **calculated in views**, not stored.
 | invoice_no | text | |
 | paid_on | date | |
 | remarks | text | |
+
+## Stage checklist
+
+### checklist_items (recommendations per crop stage, user-editable)
+| Column | Type | Notes |
+| --- | --- | --- |
+| crop_stage_id | uuid fk → crop_stages | |
+| type | text | do / watch / save |
+| text | text not null | e.g. Weed at ~15 and ~30 days |
+| sort_order | int | |
+| is_active | boolean default true | |
+
+Seed: `docs/stage-templates/paddy.md`.
+
+### checklist_ticks (done per crop cycle)
+| Column | Type | Notes |
+| --- | --- | --- |
+| crop_cycle_id | uuid fk | |
+| checklist_item_id | uuid fk | unique with crop_cycle_id |
+| done_on | date | |
+| note | text | |
 
 ## Report views
 
