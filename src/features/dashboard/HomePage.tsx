@@ -255,23 +255,23 @@ export default function HomePage() {
         {/* Expense split */}
         <section className="rounded-2xl border border-teal-100 bg-teal-50/60 p-4">
           <div className="mb-3 flex items-center justify-between gap-2">
-            <div className="min-w-0"><h3 className="text-sm font-semibold">Expense by {split}</h3>{cropName && <p className="truncate text-xs text-stone-500">{cropName}</p>}</div>
-            <div role="radiogroup" aria-label="Split by" className="flex gap-1 rounded-lg bg-white/70 p-1">
+            <div className="min-w-0"><h3 className="text-sm font-bold text-teal-900">Expense by {split}</h3>{cropName && <p className="truncate text-xs font-semibold text-teal-700">{cropName}</p>}</div>
+            <div role="radiogroup" aria-label="Split by" className="flex gap-1 rounded-lg border border-teal-200 bg-white p-1">
               {(['stage', 'category'] as const).map((k) => (
-                <button key={k} role="radio" aria-checked={split === k} onClick={() => setSplit(k)} className={`min-h-9 rounded-md px-3 text-xs font-medium ${split === k ? 'bg-white text-green-800 shadow-sm' : 'text-stone-600'}`}>{k === 'stage' ? 'Stage' : 'Category'}</button>
+                <button key={k} role="radio" aria-checked={split === k} onClick={() => setSplit(k)} className={`min-h-9 rounded-md px-3 text-xs font-semibold ${split === k ? 'bg-teal-700 text-white shadow-sm' : 'text-teal-800 hover:bg-teal-50'}`}>{k === 'stage' ? 'Stage' : 'Category'}</button>
               ))}
             </div>
           </div>
           <Bars rows={split_rows} />
-          <p className="mt-3 text-xs text-stone-500">{selCrop ? 'All entries of the crop selected in Crops summary.' : 'Add a crop to see its expenses here.'}</p>
+          <p className="mt-3 text-xs text-teal-700">{selCrop ? 'All entries of the crop selected in Crops summary.' : 'Add a crop to see its expenses here.'}</p>
         </section>
 
         {/* Expense vs income by month */}
         <section className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
-          <h3 className="mb-3 truncate text-sm font-semibold">Expense vs income{cropName ? ` – ${cropName}` : ''}</h3>
+          <h3 className="mb-3 truncate text-sm font-bold text-indigo-900">Expense vs income{cropName && <span className="font-semibold text-indigo-600"> – {cropName}</span>}</h3>
           <div className="flex gap-2">
           {/* Amount axis */}
-          <div className="flex h-32 flex-col justify-between text-right text-[11px] text-stone-500" aria-hidden>
+          <div className="flex h-32 flex-col justify-between text-right text-[11px] font-semibold text-indigo-700" aria-hidden>
             <span className="-mt-1.5">{short(monthMax)}</span><span>{short(monthMax / 2)}</span><span className="-mb-1.5">₹0</span>
           </div>
           <div className="flex min-w-0 flex-1 gap-2 bg-[linear-gradient(to_bottom,theme(colors.stone.100)_1px,transparent_1px)] bg-[length:100%_4rem]" role="img" aria-label="Expense and income amount by month">
@@ -281,28 +281,30 @@ export default function HomePage() {
                   <div className="w-1/3 max-w-5 rounded-t bg-red-400" style={{ height: `${(mo.expense / monthMax) * 100}%` }} title={`Expense ${formatINR(mo.expense)}`} />
                   <div className="w-1/3 max-w-5 rounded-t bg-green-500" style={{ height: `${(mo.income / monthMax) * 100}%` }} title={`Income ${formatINR(mo.income)}`} />
                 </div>
-                <span className="text-xs text-stone-500">{mo.label}</span>
+                <span className="text-xs font-semibold text-indigo-700">{mo.label}</span>
               </div>
             ))}
           </div>
           </div>
-          <p className="mt-1 text-center text-[11px] text-stone-500">Month · bars show amount (₹)</p>
-          <p className="mt-2 flex gap-4 text-xs text-stone-600"><span className="flex items-center gap-1"><span className="h-2 w-3 rounded bg-red-400" />Expense</span><span className="flex items-center gap-1"><span className="h-2 w-3 rounded bg-green-500" />Income</span></p>
+          <p className="mt-1 text-center text-[11px] font-medium text-indigo-600">Month · bars show amount (₹)</p>
+          <p className="mt-2 flex gap-4 text-xs font-semibold text-stone-700"><span className="flex items-center gap-1"><span className="h-2 w-3 rounded bg-red-400" />Expense</span><span className="flex items-center gap-1"><span className="h-2 w-3 rounded bg-green-500" />Income</span></p>
         </section>
       </div>
 
       {/* Tasks (end of page) */}
         <section className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4">
           <div className="mb-1 flex items-center justify-between">
-            <h3 className="text-sm font-semibold">Tasks: overdue & due soon</h3>
+            <h3 className="text-sm font-bold text-amber-900">Tasks: overdue & due soon</h3>
             <Link to="/tasks" className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-green-800 hover:bg-green-50">All tasks →</Link>
           </div>
           {!overdue.length && !dueSoon.length ? (
             <p className="text-sm text-stone-500">Nothing due. Tasks with a due date show here.</p>
           ) : (
-            <ul className="divide-y divide-stone-100">
+            <ul className="space-y-2">
+              {/* Overdue rows red, due-soon rows amber */}
               {[...overdue, ...dueSoon].slice(0, 6).map((t) => (
-                <TaskItem key={t.id} task={t} onChanged={() => setTaskKey((k) => k + 1)} onOpen={setOpenTask} />
+                <TaskItem key={t.id} task={t} onChanged={() => setTaskKey((k) => k + 1)} onOpen={setOpenTask}
+                  className={`rounded-xl border-l-4 ${t.due_date && t.due_date < today ? 'border-red-400 bg-red-50' : 'border-amber-400 bg-white'}`} />
               ))}
             </ul>
           )}

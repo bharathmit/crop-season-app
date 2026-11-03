@@ -10,7 +10,8 @@ const typeStyle: Record<string, string> = {
 }
 
 // One task row: big tick target on the left, tap the text to edit.
-export default function TaskItem({ task, onChanged, onOpen, showPlace = true }: { task: TaskRow; onChanged: () => void; onOpen: (t: TaskRow) => void; showPlace?: boolean }) {
+// `className` replaces the row background (e.g. coloured rows on Home).
+export default function TaskItem({ task, onChanged, onOpen, showPlace = true, className = 'bg-white' }: { task: TaskRow; onChanged: () => void; onOpen: (t: TaskRow) => void; showPlace?: boolean; className?: string }) {
   const [busy, setBusy] = useState(false)
   const done = task.status === 'done'
   const today = todayISO()
@@ -25,7 +26,7 @@ export default function TaskItem({ task, onChanged, onOpen, showPlace = true }: 
   }
 
   return (
-    <li className="flex items-start gap-1 bg-white">
+    <li className={`flex items-start gap-1 ${className}`}>
       <button
         onClick={toggle}
         disabled={busy}
