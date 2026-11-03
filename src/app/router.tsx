@@ -11,6 +11,7 @@ import EntriesPage from '../features/transactions/EntriesPage'
 import HomePage from '../features/dashboard/HomePage'
 import TasksPage from '../features/tasks/TasksPage'
 import ReportsPage from '../features/reports/ReportsPage'
+import SettingsPage from '../features/settings/SettingsPage'
 
 // Each placeholder is replaced as its feature is built (see docs/progress.md, docs/ui-plan.md).
 export const router = createBrowserRouter(
@@ -34,7 +35,7 @@ export const router = createBrowserRouter(
         { path: 'machinery', element: <MachineryPage /> },
         { path: 'machinery/:machineId/entries', element: <EntriesPage scope="machinery" /> },
         { path: 'reports', element: <ReportsPage /> },
-        { path: 'settings', element: <PlaceholderPage title="Settings" /> },
+        { path: 'settings', element: <SettingsPage /> },
         { path: 'add/:kind', element: <AddEntryPage /> },
         { path: '*', element: <PlaceholderPage title="Page not found" /> },
       ],

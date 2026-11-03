@@ -2,7 +2,7 @@
 
 Update at the end of every session: tick what is done, set the current step, add a dated line to the session log.
 
-**Current step:** Settings page (categories / items / stage guidance editor, sign out). Then owner uses the app for a season (Phase 6).
+**Current step:** Phase 6 — owner uses v1 for a season and reports fixes. All v1 screens built.
 
 ## Phase 0 — Setup
 - [x] Requirements analysis and v1 scope agreed
@@ -30,7 +30,7 @@ Update at the end of every session: tick what is done, set the current step, add
 - [x] Machinery CRUD (type chips, cards on phone / table md+)
 - [x] Crops CRUD (season, year, acres, harvest) + stage chips list + crop panel (current stage, expense / income / tasks / yield tiles with per acre) + stage editor (add / rename / reorder / hide / delete)
 - [x] Migration 0004_crop_current_stage.sql — crops.current_stage_id (first stage on insert) — tested + applied
-- [ ] Categories + items editor
+- [x] Settings: Categories & items editor (crop / farm / machine × expense / income; rename, hide, delete if unused, usual stage, default unit, add), Stage checklist editor (per crop name; Do / Watch / Save lines; start a checklist for another crop), Account (email, sign out)
 
 ## Phase 3 — Transactions
 - [x] Expense / income entry for crop (stage chips, item default stage, current stage), farm and machinery — qty × rate, subsidy / bonus, live net + per acre, new item inline, Save & add more (TransactionForm; quick add /add/expense, /add/income)
@@ -74,3 +74,4 @@ Update at the end of every session: tick what is done, set the current step, add
 - 2026-11-03 — Step 4: shared EntriesPage (crop / farm / machine), crop panel shows latest 5 + View all, Farm cards with farm totals, Machinery list with expense / income / net. Responsive check at 360/768/1280.
 - 2026-11-03 — Step 5: Dashboard + Tasks. Tasks added to the sidebar (phone reaches it from Home and the crop panel). Responsive check at 360/768/1280.
 - 2026-11-03 — Reports page with CSV export and print. Responsive check at 360/768/1280 (category table: badge under name, % hidden on phone).
+- 2026-11-03 — Settings page done; v1 feature-complete. Responsive check at 360/768/1280 (fixed guidance row layout).
