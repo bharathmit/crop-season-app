@@ -7,6 +7,7 @@ Responsive web app for one farmer (Bharath) to track **crop-wise expenses and ca
 2. `docs/decisions.md` — settled decisions. Do not re-open them without asking.
 3. `docs/requirements.md` — first-version scope (what is in and out).
 4. `docs/data-model.md` — tables and views (status shown at top of file).
+5. `docs/ui-plan.md` — screens and layout (modelled on the owner's reference app).
 
 ## Working rules (owner preferences)
 - Plan first, then build. Ask before any large or unrequested change.

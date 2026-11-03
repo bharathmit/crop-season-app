@@ -9,7 +9,8 @@ Update at the end of every session: tick what is done, set the current step, add
 - [x] Project scaffold: React + TS + Vite + Tailwind + Router + Supabase client
 - [x] Claude Code memory: CLAUDE.md, docs/, slash commands
 - [x] Supabase project `crop-season-app` (ref pwplyirgvgcnzugutirc, ap-southeast-1); migrations 0001 + 0002 applied; security advisor clean
-- [ ] Owner adds GitHub secrets VITE_SUPABASE_URL + VITE_SUPABASE_PUBLISHABLE_KEY
+- [x] Owner added GitHub secrets VITE_SUPABASE_URL + VITE_SUPABASE_PUBLISHABLE_KEY
+- [x] UI plan from reference app (docs/ui-plan.md) — awaiting owner approval
 - [x] Git repository initialised; first commit made locally
 - [x] Pushed to GitHub: https://github.com/bharathmit/crop-season-app
 - [x] GitHub Pages deploy workflow (.github/workflows/deploy.yml)
@@ -56,3 +57,4 @@ Update at the end of every session: tick what is done, set the current step, add
 - 2026-11-03 — Data model v3: plots → farms; machinery added; crops/seasons/cycles/harvest merged into crops; expenses + incomes merged into transactions (scope crop/farm/machinery). Farm and machinery categories seeded.
 - 2026-11-03 — Data model v3 approved. Wrote 0001_init.sql (9 tables, triggers, RLS, 4 views, bills bucket) and 0002_seed_defaults.sql; local PGlite test passes (figures match owner's Excel). Feature folders renamed to farms / machinery / transactions.
 - 2026-11-03 — Created Supabase project crop-season-app (Singapore region); applied 0001_init + 0002_seed_defaults; 9 tables, 4 views, 9 RLS tables, bills bucket verified; advisor: no issues.
+- 2026-11-03 — Reviewed owner's reference app (pannai.marutham.com); wrote docs/ui-plan.md (shell, 10 screens, v1 exclusions).
