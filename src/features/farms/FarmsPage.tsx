@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { MapPin, Pencil, Plus } from 'lucide-react'
-import AmountWithPerAcre from '../../components/AmountWithPerAcre'
+import MoneyTiles from '../../components/MoneyTiles'
 import Chips from '../../components/ui/Chips'
 import { periodRange } from '../../lib/period'
 import { useScopeTotals } from '../transactions/data'
@@ -71,11 +71,7 @@ export default function FarmsPage() {
                 <div><dt className="text-xs text-stone-500">Water</dt><dd className="truncate">{farm.water_source ?? '—'}</dd></div>
                 <div className="col-span-2"><dt className="text-xs text-stone-500">Soil</dt><dd className="truncate">{farm.soil_type ?? '—'}</dd></div>
               </dl>
-              <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-stone-50 p-3 text-xs">
-                <div><p className="text-stone-500">Expense ({year})</p><AmountWithPerAcre amount={totals[farm.id]?.expense ?? 0} acres={farm.area_acres} size="sm" hidePerAcre /></div>
-                <div><p className="text-stone-500">Income ({year})</p><AmountWithPerAcre amount={totals[farm.id]?.income ?? 0} acres={farm.area_acres} size="sm" hidePerAcre /></div>
-                <div><p className="text-stone-500">Net</p><AmountWithPerAcre amount={totals[farm.id]?.net ?? 0} acres={farm.area_acres} size="sm" hidePerAcre /></div>
-              </div>
+              <div className="mt-4"><MoneyTiles expense={totals[farm.id]?.expense ?? 0} income={totals[farm.id]?.income ?? 0} suffix={`(${year})`} /></div>
               <Link to={`/farm/${farm.id}/entries`} className="mt-3 flex min-h-11 items-center justify-center rounded-lg border border-stone-300 text-sm font-medium text-green-800 hover:bg-green-50">
                 Farm expenses & income →
               </Link>

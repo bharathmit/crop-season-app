@@ -2,9 +2,12 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import Chips from '../../components/ui/Chips'
+import MoneyTiles from '../../components/MoneyTiles'
 import EmptyState, { PageHeader } from '../../components/ui/EmptyState'
 import { Button, ErrorText } from '../../components/ui/form'
-import { daysSince, formatAcres, formatDate } from '../../lib/format'
+import { daysSince, formatAcres, formatDate, formatINR, netClass } from '../../lib/format'
+import { supabase } from '../../lib/supabase'
+import { useRows } from '../../lib/useRows'
 import { DEFAULT_STAGES } from '../../types/domain'
 import { useFarms } from '../farms/data'
 import CropForm from './CropForm'
@@ -18,6 +21,12 @@ function StageChip({ name }: { name: string | undefined }) {
 export default function CropsPage() {
   const farms = useFarms()
   const crops = useCrops()
+  // All entries per crop (no period): expense, income, net.
+  const money = useRows<{ crop_id: string; expense: number; revenue: number }[]>(() => supabase.from('v_crop_profit').select('crop_id, expense, revenue'), [crops.data])
+  const moneyOf = (id: string) => {
+    const r = money.data?.find((x) => x.crop_id === id)
+    return { expense: Number(r?.expense ?? 0), income: Number(r?.revenue ?? 0) }
+  }
   const { cropId } = useParams()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
@@ -91,6 +100,7 @@ export default function CropsPage() {
                       <StageChip name={c.current_stage?.name} />
                     </div>
                     <p className="mt-2 text-xs text-stone-500">{farmById(c.farm_id)?.name} · {age == null ? 'No sowing date' : `${age} days old`}</p>
+                    <div className="mt-3"><MoneyTiles {...moneyOf(c.id)} acres={c.area_acres} /></div>
                   </Link>
                 </li>
               )
@@ -106,24 +116,31 @@ export default function CropsPage() {
                     <th className="px-4 py-3 font-medium">Crop</th>
                     <th className="px-4 py-3 font-medium">Season</th>
                     <th className="hidden px-4 py-3 font-medium lg:table-cell">Farm</th>
-                    <th className="px-4 py-3 font-medium">Area</th>
-                    <th className="px-4 py-3 font-medium">Age</th>
+                    <th className="hidden px-4 py-3 font-medium lg:table-cell">Area</th>
+                    <th className="hidden px-4 py-3 font-medium lg:table-cell">Age</th>
                     <th className="px-4 py-3 font-medium">Stage</th>
-                    <th className="hidden px-4 py-3 font-medium lg:table-cell">Sowing date</th>
+                    <th className="hidden px-4 py-3 font-medium xl:table-cell">Sowing date</th>
+                    <th className="px-4 py-3 text-right font-medium">Expense</th>
+                    <th className="px-4 py-3 text-right font-medium">Income</th>
+                    <th className="px-4 py-3 text-right font-medium">Net</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100">
                   {shown.map((c) => {
                     const age = daysSince(c.sowing_date)
+                    const m = moneyOf(c.id)
                     return (
                       <tr key={c.id} onClick={() => navigate(`/crops/${c.id}`)} className={`cursor-pointer hover:bg-stone-50 ${c.id === cropId ? 'bg-green-50' : ''}`}>
                         <td className="px-4 py-3 font-medium">{c.crop_name}{c.variety && <span className="font-normal text-stone-500"> · {c.variety}</span>}</td>
-                        <td className="whitespace-nowrap px-4 py-3">{c.season} {c.season_year}</td>
+                        <td className="whitespace-nowrap px-4 py-3">{c.season} {c.season_year}<span className="block text-xs text-stone-500 lg:hidden">{formatAcres(c.area_acres)}</span></td>
                         <td className="hidden px-4 py-3 lg:table-cell">{farmById(c.farm_id)?.name}</td>
-                        <td className="whitespace-nowrap px-4 py-3">{formatAcres(c.area_acres)}</td>
-                        <td className="whitespace-nowrap px-4 py-3">{age == null ? '—' : `${age} d`}</td>
+                        <td className="hidden whitespace-nowrap px-4 py-3 lg:table-cell">{formatAcres(c.area_acres)}</td>
+                        <td className="hidden whitespace-nowrap px-4 py-3 lg:table-cell">{age == null ? '—' : `${age} d`}</td>
                         <td className="px-4 py-3"><StageChip name={c.current_stage?.name} /></td>
-                        <td className="hidden whitespace-nowrap px-4 py-3 lg:table-cell">{formatDate(c.sowing_date)}</td>
+                        <td className="hidden whitespace-nowrap px-4 py-3 xl:table-cell">{formatDate(c.sowing_date)}</td>
+                        <td className="whitespace-nowrap px-4 py-3 text-right font-medium text-red-700">{formatINR(m.expense)}</td>
+                        <td className="whitespace-nowrap px-4 py-3 text-right font-medium text-green-700">{formatINR(m.income)}</td>
+                        <td className={`whitespace-nowrap px-4 py-3 text-right font-semibold ${netClass(m.income - m.expense)}`}>{formatINR(m.income - m.expense)}</td>
                       </tr>
                     )
                   })}

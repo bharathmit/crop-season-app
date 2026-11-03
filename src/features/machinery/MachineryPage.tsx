@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Pencil, Plus } from 'lucide-react'
 import { useScopeTotals } from '../transactions/data'
 import Chips from '../../components/ui/Chips'
+import MoneyTiles from '../../components/MoneyTiles'
 import { periodRange } from '../../lib/period'
 import EmptyState, { PageHeader } from '../../components/ui/EmptyState'
 import { Button, ErrorText } from '../../components/ui/form'
@@ -65,7 +66,6 @@ export default function MachineryPage() {
       ) : (
         <>
           <div className="mb-4"><Chips label="Machine status" chips={chips} value={status} onChange={(k) => setStatus(k as 'active' | 'inactive')} /></div>
-          <p className="mb-3 text-xs text-stone-500">Expense, income and net for {year}.</p>
 
           {/* Phone: cards */}
           <ul className="space-y-3 md:hidden">
@@ -77,11 +77,7 @@ export default function MachineryPage() {
                     <span className="shrink-0 rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-600">{capitalize(m.type)}</span>
                   </div>
                   <p className="mt-1 text-sm text-stone-600">{farmName(m.farm_id)} · Bought {formatDate(m.purchase_date)}</p>
-                  <p className="mt-2 text-sm">
-                    <span className="text-stone-500">Net </span>
-                    <span className={`font-semibold ${(totals[m.id]?.net ?? 0) < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatINR(totals[m.id]?.net ?? 0)}</span>
-                    <span className="text-xs text-stone-500"> · exp {formatINR(totals[m.id]?.expense ?? 0)} · inc {formatINR(totals[m.id]?.income ?? 0)}</span>
-                  </p>
+                  <div className="mt-3"><MoneyTiles expense={totals[m.id]?.expense ?? 0} income={totals[m.id]?.income ?? 0} suffix={`(${year})`} /></div>
                   {!m.is_active && <p className="mt-1 text-xs text-amber-700">Not in use</p>}
                 </Link>
                 <button aria-label={`Edit ${m.name}`} onClick={() => setEditing(m)} className="m-2 grid h-11 w-11 shrink-0 place-items-center rounded-full text-stone-500 hover:bg-stone-100"><Pencil className="h-4 w-4" /></button>
@@ -98,8 +94,8 @@ export default function MachineryPage() {
                   <th className="px-4 py-3 font-medium">Type</th>
                   <th className="px-4 py-3 font-medium">Farm</th>
                   <th className="hidden px-4 py-3 font-medium lg:table-cell">Purchase date</th>
-                  <th className="px-4 py-3 text-right font-medium">Expense</th>
-                  <th className="px-4 py-3 text-right font-medium">Income</th>
+                  <th className="px-4 py-3 text-right font-medium">Expense ({year})</th>
+                  <th className="px-4 py-3 text-right font-medium">Income ({year})</th>
                   <th className="px-4 py-3 text-right font-medium">Net</th>
                   <th className="w-14 px-1 py-3"><span className="sr-only">Edit</span></th>
                 </tr>
@@ -111,8 +107,8 @@ export default function MachineryPage() {
                     <td className="px-4 py-3">{capitalize(m.type)}</td>
                     <td className="px-4 py-3">{farmName(m.farm_id)}</td>
                     <td className="hidden px-4 py-3 lg:table-cell">{formatDate(m.purchase_date)}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right">{formatINR(totals[m.id]?.expense ?? 0)}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right">{formatINR(totals[m.id]?.income ?? 0)}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right font-medium text-red-700">{formatINR(totals[m.id]?.expense ?? 0)}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right font-medium text-green-700">{formatINR(totals[m.id]?.income ?? 0)}</td>
                     <td className={`whitespace-nowrap px-4 py-3 text-right font-semibold ${(totals[m.id]?.net ?? 0) < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatINR(totals[m.id]?.net ?? 0)}</td>
                     <td className="px-1 py-1">
                       <button aria-label={`Edit ${m.name}`} onClick={(e) => { e.stopPropagation(); setEditing(m) }} className="grid h-11 w-11 place-items-center rounded-full text-stone-500 hover:bg-stone-100"><Pencil className="h-4 w-4" /></button>

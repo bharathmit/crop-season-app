@@ -13,6 +13,7 @@ Newest first. Each entry: date, decision, reason. Change a decision only with th
 | 2026-11-03 | Show per-acre value beside every crop-cycle amount, live while typing in entry forms | Owner's request; compare costs across plots of different size |
 | 2026-11-03 | Farm and machinery amounts shown without per acre; period filter (month / year / custom / all) on Farm, Machinery and their entries pages; category dropdown on farm / machine entries; Add / Edit opened from a crop, farm or machine hides the type and scope toggles | Owner request after first use |
 | 2026-11-03 | Farm and Machinery landing pages: current-year totals, no period filter. Farms get is_active (0005); Farm page tabs In use / Not in use (like Machinery). Machinery tabs: In use / Not in use (replace type chips) | Owner request |
+| 2026-11-03 | Coloured Expense / Income / Net tiles on Farm (current year), Machinery (current year) and Crops (all entries) lists. Home: Custom period; no per acre on Home; Crops summary of active crops drives the two charts | Owner request |
 | 2026-11-03 | Default stages for all crops: Preparation, Seeding, Transplanting, Growing, Fruiting, Harvesting, Post Harvest, Sold; editable per crop | Owner's list; one simple list fits all crops |
 | 2026-11-02 | Hosting: GitHub Pages via GitHub Actions, deploy on push to `main`; Supabase URL/key from repo secrets | Free, no extra account, automatic |
 | 2026-11-02 | Frontend: React + TypeScript + Vite + Tailwind CSS v4 + React Router | Fast setup, typed code, mobile-first styling |

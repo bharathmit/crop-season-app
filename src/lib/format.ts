@@ -36,3 +36,6 @@ export function capitalize(s: string | null | undefined): string {
   if (!s) return ''
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
+
+// Red / green text class for a net amount (loss / profit).
+export const netClass = (n: number) => (n < 0 ? 'text-red-700' : 'text-green-700')

@@ -15,7 +15,8 @@ All screens follow the **Responsive UI** rules in `CLAUDE.md` (mobile-first; che
 1. **Home / dashboard**
    - Farm card (name, acres) with a farm switcher.
    - Period filter: This month / Season / Year / Custom.
-   - Summary tiles: Net profit, Income, Expense, each with **per acre**.
+   - Period: This month / This year / Custom / All. Summary tiles Net profit, Income, Expense coloured (red expense, green income, net red/green), no per acre. Crops / Farm / Machinery net coloured, no per acre.
+   - Crops summary (active crops, coloured Expense / Income / Net) sits above the charts; tapping a row selects the crop for "Expense by stage / category" and "Expense vs income – <crop>"; tapping Net opens the crop.
    - Expense vs income bar chart (by week or month).
    - Expense donut **by stage** (and a toggle to show by category).
    - Crops summary table: name, season, acres, expense, income, net profit, per acre.
