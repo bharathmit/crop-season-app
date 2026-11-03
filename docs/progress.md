@@ -75,3 +75,4 @@ Update at the end of every session: tick what is done, set the current step, add
 - 2026-11-03 — Step 5: Dashboard + Tasks. Tasks added to the sidebar (phone reaches it from Home and the crop panel). Responsive check at 360/768/1280.
 - 2026-11-03 — Reports page with CSV export and print. Responsive check at 360/768/1280 (category table: badge under name, % hidden on phone).
 - 2026-11-03 — Settings page done; v1 feature-complete. Responsive check at 360/768/1280 (fixed guidance row layout).
+- 2026-11-03 — Fix: Edit expense/income sheet lost the saved item (category reset raced the lookups load). Known gap: entries whose item/category was deactivated still open with a blank item.

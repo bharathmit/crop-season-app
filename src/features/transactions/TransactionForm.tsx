@@ -103,6 +103,13 @@ export default function TransactionForm({ start, tx, onClose, onSaved }: { start
   useEffect(() => {
     if (!categories.length) return
     if (!categories.some((c) => c.id === categoryId)) {
+      // Editing: open on the saved item's category. The lookups effect above sets it in the
+      // same commit, so categoryId is still '' here — without this the saved item was cleared.
+      const txCategoryId = tx && itemId === tx.item_id ? L?.items.find((i) => i.id === tx.item_id)?.category_id : undefined
+      if (txCategoryId && categories.some((c) => c.id === txCategoryId)) {
+        setCategoryId(txCategoryId)
+        return
+      }
       setCategoryId(categories[0].id)
       setItemId('')
     }
