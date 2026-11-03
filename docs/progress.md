@@ -34,8 +34,10 @@ Update at the end of every session: tick what is done, set the current step, add
 - [ ] Bill photo upload
 - [ ] Transaction list with filters
 
-## Phase 4 — Checklist
-- [ ] Stage checklist per crop cycle (tick, date, note)
+## Phase 4 — Tasks
+- [x] Migration 0003_tasks.sql (tasks replace crop_checklist) — tested + applied to Supabase
+- [ ] Tasks per crop stage / farm / machine (add, tick, due date)
+- [ ] Dashboard: due today / overdue
 
 ## Phase 5 — Reports
 - [ ] Crop profit (v_crop_profit)
@@ -58,3 +60,4 @@ Update at the end of every session: tick what is done, set the current step, add
 - 2026-11-03 — Data model v3 approved. Wrote 0001_init.sql (9 tables, triggers, RLS, 4 views, bills bucket) and 0002_seed_defaults.sql; local PGlite test passes (figures match owner's Excel). Feature folders renamed to farms / machinery / transactions.
 - 2026-11-03 — Created Supabase project crop-season-app (Singapore region); applied 0001_init + 0002_seed_defaults; 9 tables, 4 views, 9 RLS tables, bills bucket verified; advisor: no issues.
 - 2026-11-03 — Reviewed owner's reference app (pannai.marutham.com); wrote docs/ui-plan.md (shell, 10 screens, v1 exclusions).
+- 2026-11-03 — Added tasks (crop stage / farm / machinery) via 0003_tasks.sql; guidance checklist now copied as tasks; applied to Supabase, advisor clean.

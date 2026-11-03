@@ -44,5 +44,7 @@ Layout and flows modelled on the owner's reference app (pannai.marutham.com, rev
 9. **Reports**: crop P&L (Excel summary metrics), stage summary, category summary, overall profit.
 10. **Settings**: farms, categories and items, stage guidance; sign out.
 
+8b. **Tasks**: per crop stage, farm and machine; add / tick / due date. Crop panel tile Open / Completed; dashboard Due today / Overdue.
+
 ## Not in v1 (seen in the reference)
-Notes, Tasks, Rain gauge, Farmers / Contacts, Inventory, Documents library, Machine hours driven.
+Notes, Rain gauge, Farmers / Contacts, Inventory, Documents library, Machine hours driven.

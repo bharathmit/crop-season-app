@@ -4,6 +4,7 @@ Newest first. Each entry: date, decision, reason. Change a decision only with th
 
 | Date | Decision | Reason |
 | --- | --- | --- |
+| 2026-11-03 | Tasks for crop stage / farm / machinery in one `tasks` table that also holds the stage guidance checklist (replaces crop_checklist) | Owner's request; one list instead of two; stays at 9 tables |
 | 2026-11-03 | Data model v3 approved; `paid_by` kept as free text | Owner approved; Paid By meaning not specified |
 | 2026-11-03 | Default lists load per user via `seed_my_defaults()` called once after first login | Rows are user-owned and editable; seed needs `auth.uid()` |
 | 2026-11-03 | Data model v3: farms + machinery + crops each have expenses and income in one `transactions` table (scope crop / farm / machinery); crops, seasons, crop cycles and harvest merged into one `crops` table | Owner's request: fewer tables, farm and machinery costs in overall profit |

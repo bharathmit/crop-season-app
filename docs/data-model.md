@@ -1,13 +1,13 @@
 # Data model
 
-**Status: APPROVED v3 (2026-11-03). Implemented in `supabase/migrations/0001_init.sql` + `0002_seed_defaults.sql`; tested with `npm run test:db`.** 9 tables + 4 views + 1 storage bucket.
+**Status: APPROVED v3 (2026-11-03). Implemented in `supabase/migrations/0001_init.sql` + `0002_seed_defaults.sql` + `0003_tasks.sql`; tested with `npm run test:db`.** 9 tables + 4 views + 1 storage bucket.
 
 Changes from v2 (owner review 2026-11-03):
 - `plots` → **`farms`**, with its own expense and income entries.
 - **`machinery`** added, with its own expense and income entries (fuel, repair, hire-out income).
 - `crops` + `seasons` + `crop_cycles` (+ `harvests`) **merged into one `crops` table**: one row = one crop grown on one farm in one season.
 - `expenses` + `incomes` **merged into one `transactions` table** with `entry_type` (expense / income) and `scope` (crop / farm / machinery). Overall profit = one sum.
-- `checklist_items` + `checklist_ticks` → `stage_guidance` (library) + `crop_checklist` (copied per crop, with done flag).
+- `checklist_items` + `checklist_ticks` → `stage_guidance` (library) + **`tasks`** (guidance copied per crop stage, plus own tasks for crop stage / farm / machinery).
 
 Every table has `id uuid pk default gen_random_uuid()`, `user_id uuid not null default auth.uid()`, `created_at timestamptz default now()`, and row-level security `user_id = auth.uid()`. Omitted below.
 
@@ -55,7 +55,7 @@ each = Σ income.net_amount − Σ expense.net_amount
 | moisture_loss_pct | numeric(5,2) default 5 | |
 | net_yield_qtl | numeric(10,2) generated | gross × (1 − moisture / 100) |
 
-On insert: copy the 8 default stages into `crop_stages`, and matching `stage_guidance` rows into `crop_checklist`.
+On insert: copy the 8 default stages into `crop_stages`, and matching `stage_guidance` rows into `tasks` (source = guidance).
 
 ### 4. crop_stages (per crop row, user-editable)
 | Column | Type | Notes |
@@ -123,15 +123,21 @@ Check constraints enforce the required ids per scope; a trigger checks the stage
 
 Seed: `docs/stage-templates/paddy.md`.
 
-### 9. crop_checklist (per crop, copied from guidance)
+### 9. tasks (crop stage, farm or machinery; replaces crop_checklist — migration 0003)
 | Column | Type | Notes |
 | --- | --- | --- |
-| crop_stage_id | uuid fk → crop_stages | |
-| type | text | do / watch / save |
-| text | text not null | editable; user can add own items |
-| is_done | boolean default false | |
-| done_on | date | |
-| note | text | |
+| scope | text not null | crop / farm / machinery |
+| farm_id | uuid fk → farms not null | filled from crop / machine by trigger |
+| crop_id, crop_stage_id | uuid fk | required when scope = crop |
+| machinery_id | uuid fk | required when scope = machinery |
+| title | text not null | e.g. Weed at ~15 days, Service power tiller |
+| notes | text | |
+| due_date | date | dashboard: due today / overdue |
+| status | text | open / done |
+| done_on | date | stamped by trigger when done |
+| source | text | guidance (copied from stage_guidance on crop insert) / manual |
+| type | text | do / watch / save (guidance tasks) |
+| sort_order | int | |
 
 ## Report views
 | View | Shows |

@@ -36,7 +36,7 @@ src/
   app/            router and app-wide setup
   components/     shared UI (layout/, form controls, tables)
   features/       one folder per feature: farms, machinery, crops, stages,
-                  transactions (expense + income entry), checklist, reports
+                  transactions (expense + income entry), tasks, reports
                   (each holds its pages, components, and data hooks)
   lib/            supabase client, formatters (₹, dates), helpers
   pages/          generic pages (placeholder, not-found)
@@ -54,6 +54,7 @@ docs/             requirements, decisions, data model, progress, stage templates
 - **Machinery**: an owned machine (tractor, power tiller…) on a farm. Has its own expenses (fuel, repair, EMI) and income (hire-out).
 - **Crop**: one crop grown on one farm in one season (crop name + variety + season + year + acres + sowing date + harvest). Crop expenses and income are tagged with a stage.
 - **Overall profit** = crop profit + farm net + machinery net.
+- **Task**: a to-do on a crop stage, the farm or a machine (open / done, optional due date). Stage guidance (Do / Watch / Save) is copied in as tasks when a crop is created; the owner adds their own.
 - **Stage**: an ordered phase of a crop. Default list for every crop: Preparation → Seeding → Transplanting → Growing → Fruiting → Harvesting → Post Harvest → Sold. Each crop gets its own copy; the user can add, rename, reorder or deactivate stages per crop.
 - **Cash profit**: income received − money paid out. Family labour and own-farm inputs are **not** costed (they may be logged by quantity only).
 - **Seasons**: Kuruvai, Samba, Navarai, or custom.
