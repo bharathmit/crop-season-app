@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Plus } from 'lucide-react'
+import { ArrowRight, Plus, Receipt, Wallet } from 'lucide-react'
+import MoneyTiles, { NetIcon, TILE } from '../../components/MoneyTiles'
 import PeriodFilter from '../../components/PeriodFilter'
 import EmptyState from '../../components/ui/EmptyState'
 import { Button, ErrorText, Select } from '../../components/ui/form'
@@ -45,6 +46,7 @@ function Bars({ rows }: { rows: { label: string; value: number; extra: string }[
 }
 
 const card = 'rounded-2xl border border-stone-200 bg-white p-4'
+const tile = 'flex items-start gap-3 rounded-2xl border p-4'
 
 export default function HomePage() {
   const farms = useFarms()
@@ -62,8 +64,12 @@ export default function HomePage() {
     [farmId],
   )
   // Crops summary lists active (not closed) crops only.
-  const activeIds = useRows<{ id: string }[]>(() => supabase.from('crops').select('id').eq('farm_id', farmId).neq('status', 'closed'), [farmId])
+  const activeIds = useRows<{ id: string; current_stage: { name: string } | null }[]>(
+    () => supabase.from('crops').select('id, current_stage:crop_stages!crops_current_stage_id_fkey(name)').eq('farm_id', farmId).neq('status', 'closed').returns<{ id: string; current_stage: { name: string } | null }[]>(),
+    [farmId],
+  )
   const activeCrops = (crops.data ?? []).filter((c) => activeIds.data?.some((a) => a.id === c.crop_id))
+  const stageOf = (id: string) => activeIds.data?.find((a) => a.id === id)?.current_stage?.name
   const [cropPick, setCropPick] = useState('')
   const selCrop = activeCrops.find((c) => c.crop_id === cropPick) ?? activeCrops[0]
   const cropName = selCrop ? `${selCrop.crop_name}${selCrop.variety ? ` · ${selCrop.variety}` : ''}` : ''
@@ -71,7 +77,7 @@ export default function HomePage() {
   const tasks = useTasks({}, taskKey)
   const [openTask, setOpenTask] = useState<TaskRow | null>(null)
 
-  const period = usePeriod('month')
+  const period = usePeriod('year')
   const [split, setSplit] = useState<'stage' | 'category'>('stage')
   const today = todayISO()
 
@@ -113,7 +119,14 @@ export default function HomePage() {
       return { key, label: MONTHS.at(d.getUTCMonth()) ?? '', expense: sum(rows, 'expense'), income: sum(rows, 'income') }
     })
   }, [cropLines, today]) // eslint-disable-line react-hooks/exhaustive-deps
-  const monthMax = Math.max(1, ...months.flatMap((x) => [x.expense, x.income]))
+  // Amount axis: round the top up to a tidy number (1, 2, 2.5, 5 × 10^n).
+  const rawMax = Math.max(0, ...months.flatMap((x) => [x.expense, x.income]))
+  const monthMax = (() => {
+    if (rawMax <= 0) return 1000
+    const p = 10 ** Math.floor(Math.log10(rawMax))
+    return ([1, 2, 2.5, 5, 10].find((m) => m * p >= rawMax) ?? 10) * p
+  })()
+  const short = (n: number) => (n >= 1e5 ? `₹${+(n / 1e5).toFixed(1)}L` : n >= 1e3 ? `₹${+(n / 1e3).toFixed(1)}k` : `₹${n}`)
 
   const farmTasks = (tasks.data ?? []).filter((t) => t.farm_id === farmId && t.status === 'open')
   const overdue = farmTasks.filter((t) => t.due_date && t.due_date < today)
@@ -153,12 +166,19 @@ export default function HomePage() {
 
       {/* Tiles: 2 per row on phone, 4 on desktop */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className={`${card} col-span-2 lg:col-span-1 ${income - expense < 0 ? 'border-red-200' : 'border-green-200'}`}>
-          <p className="text-xs text-stone-500">Net profit (crop + farm + machinery)</p>
-          <p className={`text-xl font-semibold ${netClass(income - expense)}`}>{formatINR(income - expense)}</p>
+        {/* Owner's colours: blue net profit (red / green amount), green income, red expense */}
+        <div className={`${tile} col-span-2 lg:col-span-1 ${TILE.net.box}`}>
+          <NetIcon net={income - expense} className="mt-0.5 h-5 w-5 shrink-0" />
+          <div className="min-w-0"><p className="text-xs text-stone-600">Net profit (crop + farm + machinery)</p><p className={`text-xl font-semibold ${netClass(income - expense)}`}>{formatINR(income - expense)}</p></div>
         </div>
-        <div className={`${card} border-green-100 bg-green-50`}><p className="text-xs text-stone-500">Income</p><p className="text-base font-semibold text-green-700">{formatINR(income)}</p></div>
-        <div className={`${card} border-red-100 bg-red-50`}><p className="text-xs text-stone-500">Expense</p><p className="text-base font-semibold text-red-700">{formatINR(expense)}</p></div>
+        <div className={`${tile} ${TILE.income.box}`}>
+          <Wallet aria-hidden className={`mt-0.5 h-5 w-5 shrink-0 ${TILE.income.icon}`} />
+          <div className="min-w-0"><p className="text-xs text-stone-600">Income</p><p className="truncate text-base font-semibold text-stone-900">{formatINR(income)}</p></div>
+        </div>
+        <div className={`${tile} ${TILE.expense.box}`}>
+          <Receipt aria-hidden className={`mt-0.5 h-5 w-5 shrink-0 ${TILE.expense.icon}`} />
+          <div className="min-w-0"><p className="text-xs text-stone-600">Expense</p><p className="truncate text-base font-semibold text-stone-900">{formatINR(expense)}</p></div>
+        </div>
         <Link to="/tasks" className={`${card} col-span-2 bg-amber-50 lg:col-span-1`}>
           <p className="text-xs text-stone-500">Open tasks</p>
           <p className="text-xl font-semibold">{farmTasks.length}</p>
@@ -173,7 +193,7 @@ export default function HomePage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div>
         {/* Crops summary (all time) */}
         <section className={card}>
           <div className="mb-3 flex items-center justify-between">
@@ -183,7 +203,7 @@ export default function HomePage() {
           {!activeCrops.length ? (
             <p className="text-sm text-stone-500">No active crops.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="grid grid-cols-1 gap-2 lg:grid-cols-2">
               {activeCrops.map((c) => {
                 const on = c.crop_id === selCrop?.crop_id
                 return (
@@ -193,15 +213,10 @@ export default function HomePage() {
                       className={`cursor-pointer rounded-xl border p-3 ${on ? 'border-green-600 bg-green-50/40 ring-1 ring-green-600' : 'border-stone-200 hover:bg-stone-50'}`}>
                       <div className="mb-2 flex items-baseline justify-between gap-2">
                         <span className="min-w-0 truncate text-sm font-medium">{c.crop_name}{c.variety ? ` · ${c.variety}` : ''}</span>
-                        <span className="shrink-0 text-xs text-stone-500">{c.season} {c.season_year} · {formatAcres(c.area_acres)}</span>
+                        <span className="shrink-0 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">{stageOf(c.crop_id) ?? '—'}</span>
                       </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="min-w-0 rounded-lg bg-red-50 px-2 py-1.5"><span className="block text-[11px] text-stone-600">Expense</span><span className="block truncate text-sm font-semibold text-red-700">{formatINR(c.expense)}</span></div>
-                        <div className="min-w-0 rounded-lg bg-green-50 px-2 py-1.5"><span className="block text-[11px] text-stone-600">Income</span><span className="block truncate text-sm font-semibold text-green-700">{formatINR(c.revenue)}</span></div>
-                        <Link to={`/crops/${c.crop_id}`} onClick={(e) => e.stopPropagation()} aria-label={`Open ${c.crop_name}`} className="min-w-0 rounded-lg border border-stone-200 bg-white px-2 py-1.5 hover:border-green-600">
-                          <span className="block text-[11px] text-stone-600">Net profit →</span><span className={`block truncate text-sm font-semibold underline-offset-2 hover:underline ${netClass(Number(c.profit))}`}>{formatINR(c.profit)}</span>
-                        </Link>
-                      </div>
+                      <p className="-mt-1 mb-2 text-xs text-stone-500">{c.season} {c.season_year} · {formatAcres(c.area_acres)}</p>
+                      <MoneyTiles expense={Number(c.expense)} income={Number(c.revenue)} netHref={`/crops/${c.crop_id}`} />
                     </div>
                   </li>
                 )
@@ -210,22 +225,6 @@ export default function HomePage() {
           )}
         </section>
 
-        {/* Tasks */}
-        <section className={card}>
-          <div className="mb-1 flex items-center justify-between">
-            <h3 className="text-sm font-semibold">Tasks: overdue & due soon</h3>
-            <Link to="/tasks" className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-green-800 hover:bg-green-50">All tasks →</Link>
-          </div>
-          {!overdue.length && !dueSoon.length ? (
-            <p className="text-sm text-stone-500">Nothing due. Tasks with a due date show here.</p>
-          ) : (
-            <ul className="divide-y divide-stone-100">
-              {[...overdue, ...dueSoon].slice(0, 6).map((t) => (
-                <TaskItem key={t.id} task={t} onChanged={() => setTaskKey((k) => k + 1)} onOpen={setOpenTask} />
-              ))}
-            </ul>
-          )}
-        </section>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -246,10 +245,15 @@ export default function HomePage() {
         {/* Expense vs income by month */}
         <section className={card}>
           <h3 className="mb-3 truncate text-sm font-semibold">Expense vs income{cropName ? ` – ${cropName}` : ''}</h3>
-          <div className="flex h-40 items-end gap-2" role="img" aria-label="Monthly expense and income bars">
+          <div className="flex gap-2">
+          {/* Amount axis */}
+          <div className="flex h-32 flex-col justify-between text-right text-[11px] text-stone-500" aria-hidden>
+            <span className="-mt-1.5">{short(monthMax)}</span><span>{short(monthMax / 2)}</span><span className="-mb-1.5">₹0</span>
+          </div>
+          <div className="flex min-w-0 flex-1 gap-2 bg-[linear-gradient(to_bottom,theme(colors.stone.100)_1px,transparent_1px)] bg-[length:100%_4rem]" role="img" aria-label="Expense and income amount by month">
             {months.map((mo) => (
               <div key={mo.key} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-                <div className="flex h-32 w-full items-end justify-center gap-1">
+                <div className="flex h-32 w-full items-end justify-center gap-1 border-b border-stone-300">
                   <div className="w-1/3 max-w-5 rounded-t bg-red-400" style={{ height: `${(mo.expense / monthMax) * 100}%` }} title={`Expense ${formatINR(mo.expense)}`} />
                   <div className="w-1/3 max-w-5 rounded-t bg-green-500" style={{ height: `${(mo.income / monthMax) * 100}%` }} title={`Income ${formatINR(mo.income)}`} />
                 </div>
@@ -257,10 +261,28 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+          </div>
+          <p className="mt-1 text-center text-[11px] text-stone-500">Month · bars show amount (₹)</p>
           <p className="mt-2 flex gap-4 text-xs text-stone-600"><span className="flex items-center gap-1"><span className="h-2 w-3 rounded bg-red-400" />Expense</span><span className="flex items-center gap-1"><span className="h-2 w-3 rounded bg-green-500" />Income</span></p>
         </section>
       </div>
 
+      {/* Tasks (end of page) */}
+        <section className={card}>
+          <div className="mb-1 flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Tasks: overdue & due soon</h3>
+            <Link to="/tasks" className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-green-800 hover:bg-green-50">All tasks →</Link>
+          </div>
+          {!overdue.length && !dueSoon.length ? (
+            <p className="text-sm text-stone-500">Nothing due. Tasks with a due date show here.</p>
+          ) : (
+            <ul className="divide-y divide-stone-100">
+              {[...overdue, ...dueSoon].slice(0, 6).map((t) => (
+                <TaskItem key={t.id} task={t} onChanged={() => setTaskKey((k) => k + 1)} onOpen={setOpenTask} />
+              ))}
+            </ul>
+          )}
+        </section>
       {openTask && <TaskForm task={openTask} onClose={() => setOpenTask(null)} onSaved={() => setTaskKey((k) => k + 1)} />}
       {expense === 0 && income === 0 && period.key !== 'all' && (
         <div className="text-center"><Button tone="secondary" onClick={() => period.setKey('all')}>No entries in this period · show all</Button></div>
