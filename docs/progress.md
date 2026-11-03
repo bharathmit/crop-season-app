@@ -85,3 +85,4 @@ Update at the end of every session: tick what is done, set the current step, add
 - 2026-11-03 — Home: default This year, tasks at end, stage chip in crops summary, chart amount axis. MoneyTiles restyled to owner's reference (crop panel colours, blue Net profit). Responsive check at 360/768/1280.
 - 2026-11-03 — Home: tinted sections, coloured linked Crops / Farm / Machinery net tiles, switch-farm icon, Net profit label on two lines, multi-colour expense split. Responsive check at 360/768/1280.
 - 2026-11-03 — Home: coloured task rows (overdue red, due soon amber), bold coloured section headings, Stage / Category toggle shows the selected one, coloured chart labels.
+- 2026-11-03 — Home: bold tile labels, blue 'due soon', task rows with crop / farm / machine icon sorted by due date (overdue → today → upcoming), violet Crops summary, chart axis colours (months sky, amounts amber), fuchsia crop name, emerald caption.

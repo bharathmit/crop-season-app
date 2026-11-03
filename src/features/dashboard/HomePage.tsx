@@ -141,7 +141,9 @@ export default function HomePage() {
 
   const farmTasks = (tasks.data ?? []).filter((t) => t.farm_id === farmId && t.status === 'open')
   const overdue = farmTasks.filter((t) => t.due_date && t.due_date < today)
-  const dueSoon = farmTasks.filter((t) => t.due_date && t.due_date >= today).slice(0, 5)
+  const dueSoon = farmTasks.filter((t) => t.due_date && t.due_date >= today).sort((a, b) => a.due_date!.localeCompare(b.due_date!)).slice(0, 5)
+  // Home list: overdue, then today, then upcoming — oldest date first.
+  const dueList = [...overdue, ...dueSoon].sort((a, b) => a.due_date!.localeCompare(b.due_date!)).slice(0, 6)
 
   if (!farms.loading && !farms.data?.length) {
     return (
@@ -182,22 +184,22 @@ export default function HomePage() {
         {/* Owner's colours: blue net profit (red / green amount), green income, red expense */}
         <div className={`${tile} col-span-2 lg:col-span-1 ${TILE.net.box}`}>
           <NetIcon net={income - expense} className="mt-0.5 h-5 w-5 shrink-0" />
-          <div className="min-w-0"><p className="text-xs text-stone-600">Net profit<span className="block text-[11px] text-stone-500">(crop + farm + machinery)</span></p><p className={`text-xl font-semibold ${netClass(income - expense)}`}>{formatINR(income - expense)}</p></div>
+          <div className="min-w-0"><p className="text-xs font-bold text-stone-800">Net profit<span className="block text-[11px] font-semibold text-stone-600">(crop + farm + machinery)</span></p><p className={`text-xl font-semibold ${netClass(income - expense)}`}>{formatINR(income - expense)}</p></div>
         </div>
         <div className={`${tile} ${TILE.expense.box}`}>
           <Receipt aria-hidden className={`mt-0.5 h-5 w-5 shrink-0 ${TILE.expense.icon}`} />
-          <div className="min-w-0"><p className="text-xs text-stone-600">Expense</p><p className="truncate text-base font-semibold text-stone-900">{formatINR(expense)}</p></div>
+          <div className="min-w-0"><p className="text-xs font-bold text-stone-800">Expense</p><p className="truncate text-base font-semibold text-stone-900">{formatINR(expense)}</p></div>
         </div>
         <div className={`${tile} ${TILE.income.box}`}>
           <Wallet aria-hidden className={`mt-0.5 h-5 w-5 shrink-0 ${TILE.income.icon}`} />
-          <div className="min-w-0"><p className="text-xs text-stone-600">Income</p><p className="truncate text-base font-semibold text-stone-900">{formatINR(income)}</p></div>
+          <div className="min-w-0"><p className="text-xs font-bold text-stone-800">Income</p><p className="truncate text-base font-semibold text-stone-900">{formatINR(income)}</p></div>
         </div>
         <Link to="/tasks" className={`${tile} col-span-2 border-amber-100 bg-amber-50 lg:col-span-1`}>
           <ListTodo aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
           <div className="min-w-0">
-            <p className="text-xs text-stone-600">Open tasks</p>
+            <p className="text-xs font-bold text-stone-800">Open tasks</p>
             <p className="text-xl font-semibold">{farmTasks.length}</p>
-            <p className="text-xs text-stone-500"><span className={overdue.length ? 'font-medium text-red-700' : ''}>{overdue.length} overdue</span> · {dueSoon.length} due soon</p>
+            <p className="text-xs font-bold text-stone-600"><span className={overdue.length ? 'text-red-700' : ''}>{overdue.length} overdue</span> · <span className="text-blue-700">{dueSoon.length} due soon</span></p>
           </div>
         </Link>
       </div>
@@ -211,7 +213,7 @@ export default function HomePage() {
           ['Machinery', 'machinery', Tractor, 'border-purple-100 bg-purple-50 hover:border-purple-300', 'text-purple-700', '/machinery'],
         ] as const).map(([label, s, Icon, box, icon, to]) => (
           <Link key={s} to={to} className={`min-w-0 rounded-xl border px-2 py-2 sm:px-3 ${box}`}>
-            <span className="flex items-start gap-1 text-xs leading-tight text-stone-600"><Icon aria-hidden className={`h-4 w-4 shrink-0 ${icon}`} /><span>{label} net</span></span>
+            <span className="flex items-start gap-1 text-xs font-bold leading-tight text-stone-800"><Icon aria-hidden className={`h-4 w-4 shrink-0 ${icon}`} /><span>{label} net</span></span>
             <span className={`mt-0.5 block truncate text-sm font-semibold ${netClass(netOf(s))}`}>{formatINR(netOf(s))}</span>
           </Link>
         ))}
@@ -219,9 +221,9 @@ export default function HomePage() {
 
       <div>
         {/* Crops summary (all time) */}
-        <section className={card}>
+        <section className="rounded-2xl border border-violet-100 bg-violet-50/60 p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold">Crops summary</h3>
+            <h3 className="flex items-center gap-2 text-sm font-bold text-violet-900"><Sprout aria-hidden className="h-4 w-4 text-violet-700" />Crops summary</h3>
             <Link to="/crops?new=1" className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-medium text-green-800 hover:bg-green-50"><Plus className="h-4 w-4" />Crop</Link>
           </div>
           {!activeCrops.length ? (
@@ -234,7 +236,7 @@ export default function HomePage() {
                   <li key={c.crop_id}>
                     {/* Tap the row to show this crop in the charts; tap Net to open the crop. */}
                     <div role="button" tabIndex={0} aria-pressed={on} onClick={() => setCropPick(c.crop_id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCropPick(c.crop_id) } }}
-                      className={`cursor-pointer rounded-xl border p-3 ${on ? 'border-green-600 bg-green-50/40 ring-1 ring-green-600' : 'border-stone-200 hover:bg-stone-50'}`}>
+                      className={`cursor-pointer rounded-xl border p-3 ${on ? 'border-violet-600 bg-white ring-1 ring-violet-600' : 'border-violet-100 bg-white hover:border-violet-300'}`}>
                       <div className="mb-2 flex items-baseline justify-between gap-2">
                         <span className="min-w-0 truncate text-sm font-medium">{c.crop_name}{c.variety ? ` · ${c.variety}` : ''}</span>
                         <span className="shrink-0 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">{stageOf(c.crop_id) ?? '—'}</span>
@@ -268,10 +270,10 @@ export default function HomePage() {
 
         {/* Expense vs income by month */}
         <section className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
-          <h3 className="mb-3 truncate text-sm font-bold text-indigo-900">Expense vs income{cropName && <span className="font-semibold text-indigo-600"> – {cropName}</span>}</h3>
+          <h3 className="mb-3 truncate text-sm font-bold text-indigo-900">Expense vs income{cropName && <span className="font-semibold text-fuchsia-700"> – {cropName}</span>}</h3>
           <div className="flex gap-2">
           {/* Amount axis */}
-          <div className="flex h-32 flex-col justify-between text-right text-[11px] font-semibold text-indigo-700" aria-hidden>
+          <div className="flex h-32 flex-col justify-between text-right text-[11px] font-semibold text-amber-700" aria-hidden>
             <span className="-mt-1.5">{short(monthMax)}</span><span>{short(monthMax / 2)}</span><span className="-mb-1.5">₹0</span>
           </div>
           <div className="flex min-w-0 flex-1 gap-2 bg-[linear-gradient(to_bottom,theme(colors.stone.100)_1px,transparent_1px)] bg-[length:100%_4rem]" role="img" aria-label="Expense and income amount by month">
@@ -281,12 +283,12 @@ export default function HomePage() {
                   <div className="w-1/3 max-w-5 rounded-t bg-red-400" style={{ height: `${(mo.expense / monthMax) * 100}%` }} title={`Expense ${formatINR(mo.expense)}`} />
                   <div className="w-1/3 max-w-5 rounded-t bg-green-500" style={{ height: `${(mo.income / monthMax) * 100}%` }} title={`Income ${formatINR(mo.income)}`} />
                 </div>
-                <span className="text-xs font-semibold text-indigo-700">{mo.label}</span>
+                <span className="text-xs font-semibold text-sky-700">{mo.label}</span>
               </div>
             ))}
           </div>
           </div>
-          <p className="mt-1 text-center text-[11px] font-medium text-indigo-600">Month · bars show amount (₹)</p>
+          <p className="mt-1 text-center text-[11px] font-semibold text-emerald-700">Month · bars show amount (₹)</p>
           <p className="mt-2 flex gap-4 text-xs font-semibold text-stone-700"><span className="flex items-center gap-1"><span className="h-2 w-3 rounded bg-red-400" />Expense</span><span className="flex items-center gap-1"><span className="h-2 w-3 rounded bg-green-500" />Income</span></p>
         </section>
       </div>
@@ -302,8 +304,8 @@ export default function HomePage() {
           ) : (
             <ul className="space-y-2">
               {/* Overdue rows red, due-soon rows amber */}
-              {[...overdue, ...dueSoon].slice(0, 6).map((t) => (
-                <TaskItem key={t.id} task={t} onChanged={() => setTaskKey((k) => k + 1)} onOpen={setOpenTask}
+              {dueList.map((t) => (
+                <TaskItem key={t.id} task={t} onChanged={() => setTaskKey((k) => k + 1)} onOpen={setOpenTask} showIcon
                   className={`rounded-xl border-l-4 ${t.due_date && t.due_date < today ? 'border-red-400 bg-red-50' : 'border-amber-400 bg-white'}`} />
               ))}
             </ul>

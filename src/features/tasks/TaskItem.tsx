@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check } from 'lucide-react'
+import { Check, Fence, Sprout, Tractor } from 'lucide-react'
 import { formatDate, todayISO } from '../../lib/format'
 import { setTaskDone, taskPlace, type TaskRow } from './data'
 
@@ -10,8 +10,11 @@ const typeStyle: Record<string, string> = {
 }
 
 // One task row: big tick target on the left, tap the text to edit.
-// `className` replaces the row background (e.g. coloured rows on Home).
-export default function TaskItem({ task, onChanged, onOpen, showPlace = true, className = 'bg-white' }: { task: TaskRow; onChanged: () => void; onOpen: (t: TaskRow) => void; showPlace?: boolean; className?: string }) {
+// Icon per task place (same colours as the Home net tiles).
+const scopeIcon = { crop: [Sprout, 'text-lime-700', 'Crop'], farm: [Fence, 'text-orange-700', 'Farm'], machinery: [Tractor, 'text-purple-700', 'Machine'] } as const
+
+// `className` replaces the row background (e.g. coloured rows on Home). `showIcon` puts a crop / farm / machine icon first.
+export default function TaskItem({ task, onChanged, onOpen, showPlace = true, className = 'bg-white', showIcon = false }: { task: TaskRow; onChanged: () => void; onOpen: (t: TaskRow) => void; showPlace?: boolean; className?: string; showIcon?: boolean }) {
   const [busy, setBusy] = useState(false)
   const done = task.status === 'done'
   const today = todayISO()
@@ -27,6 +30,10 @@ export default function TaskItem({ task, onChanged, onOpen, showPlace = true, cl
 
   return (
     <li className={`flex items-start gap-1 ${className}`}>
+      {showIcon && (() => {
+        const [Icon, color, label] = scopeIcon[task.scope as keyof typeof scopeIcon] ?? scopeIcon.farm
+        return <span className="grid h-12 w-8 shrink-0 place-items-center pl-2" title={label}><Icon aria-label={label} className={`h-5 w-5 ${color}`} /></span>
+      })()}
       <button
         onClick={toggle}
         disabled={busy}
