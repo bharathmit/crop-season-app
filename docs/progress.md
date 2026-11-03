@@ -2,7 +2,7 @@
 
 Update at the end of every session: tick what is done, set the current step, add a dated line to the session log.
 
-**Current step:** Phase 2 — login (email, single user) + call seed_my_defaults() on first login; then masters.
+**Current step:** Phase 2 — Farms, Machinery, Crops screens (+ stage editor).
 
 ## Phase 0 — Setup
 - [x] Requirements analysis and v1 scope agreed
@@ -22,8 +22,10 @@ Update at the end of every session: tick what is done, set the current step, add
 - [x] Seed: 0002_seed_defaults.sql — 26 categories, 105 items, 34 paddy guidance lines
 
 ## Phase 2 — Masters
-- [ ] Auth: email login (single user)
-- [ ] Call seed_my_defaults() after first login
+- [x] Auth: email + password login / create account (src/pages/LoginPage.tsx, app/auth.tsx, RequireAuth)
+- [x] Call seed_my_defaults() after login (once per page load; idempotent)
+- [x] Responsive app shell: bottom bar + floating + (phone), icon sidebar (md), labelled sidebar (lg), quick-add sheet — checked at 360 / 768 / 1280
+- [ ] Owner: set Supabase Auth Site URL + redirect URL to the GitHub Pages address; disable sign-ups after creating the account
 - [ ] Farms CRUD
 - [ ] Machinery CRUD
 - [ ] Crops CRUD (season, year, acres, harvest) + stage editor (add / rename / reorder / hide)
@@ -62,3 +64,4 @@ Update at the end of every session: tick what is done, set the current step, add
 - 2026-11-03 — Reviewed owner's reference app (pannai.marutham.com); wrote docs/ui-plan.md (shell, 10 screens, v1 exclusions).
 - 2026-11-03 — Added tasks (crop stage / farm / machinery) via 0003_tasks.sql; guidance checklist now copied as tasks; applied to Supabase, advisor clean.
 - 2026-11-03 — Standing rule added: responsive UI on every screen (CLAUDE.md › Responsive UI).
+- 2026-11-03 — Step 1 done: login + responsive shell (lucide-react icons). Dev-only VITE_UI_PREVIEW=1 skips login for screenshot checks.
