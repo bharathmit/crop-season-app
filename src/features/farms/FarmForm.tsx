@@ -14,10 +14,11 @@ export default function FarmForm({ farm, onClose, onSaved }: { farm: Farm | null
     ownership: farm?.ownership ?? 'owned',
     soil_type: farm?.soil_type ?? '',
     water_source: farm?.water_source ?? '',
+    is_active: farm?.is_active ?? true,
   })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value })
+  const set = (k: Exclude<keyof typeof f, 'is_active'>) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value })
 
   async function save(e?: FormEvent) {
     e?.preventDefault()
@@ -33,6 +34,7 @@ export default function FarmForm({ farm, onClose, onSaved }: { farm: Farm | null
       ownership: f.ownership as Farm['ownership'],
       soil_type: toTextOrNull(f.soil_type),
       water_source: toTextOrNull(f.water_source),
+      is_active: f.is_active,
     }
     const { error } = farm ? await supabase.from('farms').update(row).eq('id', farm.id) : await supabase.from('farms').insert(row)
     setBusy(false)
@@ -77,7 +79,11 @@ export default function FarmForm({ farm, onClose, onSaved }: { farm: Farm | null
             </Select>
           </Field>
           <Field label="Water source"><TextInput value={f.water_source} onChange={set('water_source')} placeholder="Borewell, canal, tank" /></Field>
-          <Field label="Soil type" className="md:col-span-2"><TextInput value={f.soil_type} onChange={set('soil_type')} placeholder="e.g. Clay loam" /></Field>
+          <Field label="Soil type"><TextInput value={f.soil_type} onChange={set('soil_type')} placeholder="e.g. Clay loam" /></Field>
+          <label className="flex min-h-11 items-center gap-3 self-end">
+            <input type="checkbox" checked={f.is_active} onChange={(e) => setF({ ...f, is_active: e.target.checked })} className="h-5 w-5 accent-green-700" />
+            <span className="text-sm text-stone-700">In use (untick to hide it on the Farm page)</span>
+          </label>
         </FormGrid>
         <ErrorText>{error}</ErrorText>
         <button type="submit" hidden />

@@ -3,14 +3,13 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Pencil, Plus } from 'lucide-react'
 import { useScopeTotals } from '../transactions/data'
 import Chips from '../../components/ui/Chips'
-import PeriodFilter from '../../components/PeriodFilter'
-import { usePeriod } from '../../lib/period'
+import { periodRange } from '../../lib/period'
 import EmptyState, { PageHeader } from '../../components/ui/EmptyState'
 import { Button, ErrorText } from '../../components/ui/form'
 import { capitalize, formatDate, formatINR } from '../../lib/format'
 import { supabase } from '../../lib/supabase'
 import { useRows } from '../../lib/useRows'
-import { MACHINE_TYPES, type Machine } from '../../types/domain'
+import type { Machine } from '../../types/domain'
 import { useFarms } from '../farms/data'
 import MachineForm from './MachineForm'
 
@@ -18,27 +17,25 @@ export default function MachineryPage() {
   const farms = useFarms()
   const machines = useRows<Machine[]>(() => supabase.from('machinery').select('*').order('name'), [])
   const navigate = useNavigate()
-  const period = usePeriod()
-  const { totals } = useScopeTotals('machinery', period.range)
+  const yearRange = periodRange('year', '', '')
+  const year = yearRange.from?.slice(0, 4)
+  const { totals } = useScopeTotals('machinery', yearRange) // current year
   const [params, setParams] = useSearchParams()
-  const [type, setType] = useState('all')
+  const [status, setStatus] = useState<'active' | 'inactive'>('active')
   const [editing, setEditing] = useState<Machine | null>(null)
   const adding = params.get('new') === '1'
 
   const list = machines.data ?? []
   const farmName = (id: string) => farms.data?.find((f) => f.id === id)?.name ?? ''
+  // In use (active) first; Not in use lists machines unticked as in use.
   const chips = useMemo(
     () => [
-      { key: 'all', label: 'All', count: list.length },
-      ...MACHINE_TYPES.filter((t) => t === 'other' || list.some((m) => m.type === t) || ['tractor', 'power tiller'].includes(t)).map((t) => ({
-        key: t,
-        label: capitalize(t),
-        count: list.filter((m) => m.type === t).length,
-      })),
+      { key: 'active', label: 'In use', count: list.filter((m) => m.is_active).length },
+      { key: 'inactive', label: 'Not in use', count: list.filter((m) => !m.is_active).length },
     ],
     [list],
   )
-  const shown = type === 'all' ? list : list.filter((m) => m.type === type)
+  const shown = list.filter((m) => m.is_active === (status === 'active'))
 
   const openNew = () => setParams({ new: '1' })
   const close = () => {
@@ -67,8 +64,8 @@ export default function MachineryPage() {
         <EmptyState title="No machines yet" text="Add your tractor, power tiller, sprayer or pump set." action={<Button onClick={openNew}><Plus className="h-4 w-4" />Add machine</Button>} />
       ) : (
         <>
-          <PeriodFilter period={period} />
-          <div className="mb-4"><Chips label="Machine type" chips={chips} value={type} onChange={setType} /></div>
+          <div className="mb-4"><Chips label="Machine status" chips={chips} value={status} onChange={(k) => setStatus(k as 'active' | 'inactive')} /></div>
+          <p className="mb-3 text-xs text-stone-500">Expense, income and net for {year}.</p>
 
           {/* Phone: cards */}
           <ul className="space-y-3 md:hidden">

@@ -13,6 +13,7 @@ export interface Farm {
   ownership: 'owned' | 'leased' | null
   soil_type: string | null
   water_source: string | null
+  is_active: boolean
   created_at: string
 }
 

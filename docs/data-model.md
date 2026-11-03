@@ -25,9 +25,10 @@ each = Σ income.net_amount − Σ expense.net_amount
 | name | text not null | e.g. Villupuram wetland |
 | location | text | village / taluk |
 | survey_no | text | |
-| area_acres | numeric(6,2) not null | per-acre basis for farm and machinery entries |
+| area_acres | numeric(6,2) not null | farm size (crop per acre uses crops.area_acres) |
 | ownership | text | owned / leased |
 | soil_type, water_source | text | |
+| is_active | boolean not null default true | in use; Farm page lists active farms only (0005) |
 
 ### 2. machinery
 | Column | Type | Notes |

@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { MapPin, Pencil, Plus } from 'lucide-react'
 import AmountWithPerAcre from '../../components/AmountWithPerAcre'
-import PeriodFilter from '../../components/PeriodFilter'
-import { usePeriod } from '../../lib/period'
+import { periodRange } from '../../lib/period'
 import { useScopeTotals } from '../transactions/data'
 import EmptyState, { PageHeader } from '../../components/ui/EmptyState'
 import { Button, ErrorText } from '../../components/ui/form'
@@ -14,9 +13,13 @@ import { useFarms } from './data'
 
 export default function FarmsPage() {
   const { data: farms, error, loading, reload } = useFarms()
-  const period = usePeriod()
-  const { totals } = useScopeTotals('farm', period.range)
+  const yearRange = periodRange('year', '', '')
+  const year = yearRange.from?.slice(0, 4)
+  const { totals } = useScopeTotals('farm', yearRange) // current year
   const [editing, setEditing] = useState<Farm | null | 'new'>(null)
+  const [showInactive, setShowInactive] = useState(false)
+  const inactiveCount = farms?.filter((x) => !x.is_active).length ?? 0
+  const shown = farms?.filter((x) => x.is_active || showInactive) ?? []
 
   const close = () => setEditing(null)
   const saved = () => {
@@ -41,14 +44,13 @@ export default function FarmsPage() {
         />
       ) : (
         <>
-        <PeriodFilter period={period} />
         <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {farms.map((farm) => (
+          {shown.map((farm) => (
             <li key={farm.id} className="rounded-2xl border border-stone-200 bg-white p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <h3 className="truncate font-semibold text-stone-900">{farm.name}</h3>
-                  <p className="text-sm text-stone-600">{formatAcres(farm.area_acres)} · {capitalize(farm.ownership)}</p>
+                  <p className="text-sm text-stone-600">{formatAcres(farm.area_acres)} · {capitalize(farm.ownership)}{!farm.is_active && <span className="ml-2 text-xs text-amber-700">Not in use</span>}</p>
                 </div>
                 <button aria-label={`Edit ${farm.name}`} onClick={() => setEditing(farm)} className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-stone-500 hover:bg-stone-100">
                   <Pencil className="h-4 w-4" />
@@ -63,8 +65,8 @@ export default function FarmsPage() {
                 <div className="col-span-2"><dt className="text-xs text-stone-500">Soil</dt><dd className="truncate">{farm.soil_type ?? '—'}</dd></div>
               </dl>
               <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-stone-50 p-3 text-xs">
-                <div><p className="text-stone-500">Farm expense</p><AmountWithPerAcre amount={totals[farm.id]?.expense ?? 0} acres={farm.area_acres} size="sm" hidePerAcre /></div>
-                <div><p className="text-stone-500">Farm income</p><AmountWithPerAcre amount={totals[farm.id]?.income ?? 0} acres={farm.area_acres} size="sm" hidePerAcre /></div>
+                <div><p className="text-stone-500">Expense ({year})</p><AmountWithPerAcre amount={totals[farm.id]?.expense ?? 0} acres={farm.area_acres} size="sm" hidePerAcre /></div>
+                <div><p className="text-stone-500">Income ({year})</p><AmountWithPerAcre amount={totals[farm.id]?.income ?? 0} acres={farm.area_acres} size="sm" hidePerAcre /></div>
                 <div><p className="text-stone-500">Net</p><AmountWithPerAcre amount={totals[farm.id]?.net ?? 0} acres={farm.area_acres} size="sm" hidePerAcre /></div>
               </div>
               <Link to={`/farm/${farm.id}/entries`} className="mt-3 flex min-h-11 items-center justify-center rounded-lg border border-stone-300 text-sm font-medium text-green-800 hover:bg-green-50">
@@ -73,6 +75,11 @@ export default function FarmsPage() {
             </li>
           ))}
         </ul>
+        {inactiveCount > 0 && (
+          <button onClick={() => setShowInactive((v) => !v)} className="mt-3 min-h-11 text-sm font-medium text-green-800">
+            {showInactive ? 'Hide farms not in use' : `Show farms not in use (${inactiveCount})`}
+          </button>
+        )}
         </>
       )}
       {editing && <FarmForm farm={editing === 'new' ? null : editing} onClose={close} onSaved={saved} />}
