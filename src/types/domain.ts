@@ -72,3 +72,53 @@ export const DEFAULT_STAGES = [
   'Post Harvest',
   'Sold',
 ] as const
+
+export type Scope = 'crop' | 'farm' | 'machinery'
+export type EntryType = 'expense' | 'income'
+
+export interface Category {
+  id: Uuid
+  scope: Scope
+  entry_type: EntryType
+  name: string
+  sort_order: number
+  is_active: boolean
+}
+
+export interface Item {
+  id: Uuid
+  category_id: Uuid
+  name: string
+  default_stage_name: string | null
+  default_unit: string | null
+  sort_order: number
+  is_active: boolean
+}
+
+export interface Transaction {
+  id: Uuid
+  entry_type: EntryType
+  scope: Scope
+  farm_id: Uuid
+  crop_id: Uuid | null
+  crop_stage_id: Uuid | null
+  machinery_id: Uuid | null
+  item_id: Uuid
+  start_date: string
+  end_date: string | null
+  quantity: number | null
+  unit: string | null
+  rate: number | null
+  amount: number
+  govt_support: number
+  net_amount: number
+  party: string | null
+  invoice_no: string | null
+  paid_by: string | null
+  paid_on: string | null
+  remarks: string | null
+  bill_path: string | null
+  created_at: string
+}
+
+export const UNITS = ['kg', 'bag', 'litre', 'quintal', 'ton', 'acre', 'hour', 'day', 'person-day', 'nos', 'lumpsum'] as const

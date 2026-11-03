@@ -6,6 +6,7 @@ import RequireAuth from './RequireAuth'
 import FarmsPage from '../features/farms/FarmsPage'
 import MachineryPage from '../features/machinery/MachineryPage'
 import CropsPage from '../features/crops/CropsPage'
+import AddEntryPage from '../features/transactions/AddEntryPage'
 
 // Each placeholder is replaced as its feature is built (see docs/progress.md, docs/ui-plan.md).
 export const router = createBrowserRouter(
@@ -26,7 +27,7 @@ export const router = createBrowserRouter(
         { path: 'machinery', element: <MachineryPage /> },
         { path: 'reports', element: <PlaceholderPage title="Reports" /> },
         { path: 'settings', element: <PlaceholderPage title="Settings" /> },
-        { path: 'add/:kind', element: <PlaceholderPage title="Add" /> },
+        { path: 'add/:kind', element: <AddEntryPage /> },
         { path: '*', element: <PlaceholderPage title="Page not found" /> },
       ],
     },

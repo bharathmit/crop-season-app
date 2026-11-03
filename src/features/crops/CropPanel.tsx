@@ -10,6 +10,9 @@ import type { Crop, Farm } from '../../types/domain'
 import StageEditor from '../stages/StageEditor'
 import { dbMessage } from '../farms/data'
 import { useCropStages } from './data'
+import TransactionForm, { type EntryStart } from '../transactions/TransactionForm'
+import { EntryList, StageSpend } from '../transactions/CropEntries'
+import { useCropTransactions, type TxRow } from '../transactions/data'
 
 type Profit = { revenue: number | null; expense: number | null; profit: number | null }
 type TaskCount = { status: string }
@@ -19,7 +22,15 @@ export default function CropPanel({ crop, farm, onClose, onEdit, onChanged }: { 
   const stages = useCropStages(crop.id)
   const profit = useRows<Profit>(() => supabase.from('v_crop_profit').select('revenue, expense, profit').eq('crop_id', crop.id).maybeSingle(), [crop.id])
   const tasks = useRows<TaskCount[]>(() => supabase.from('tasks').select('status').eq('crop_id', crop.id), [crop.id])
+  const txs = useCropTransactions(crop.id)
+  const [entry, setEntry] = useState<{ start: EntryStart; tx: TxRow | null } | null>(null)
+  const [refreshKey, setRefreshKey] = useState(0)
   const [editStages, setEditStages] = useState(false)
+  const refreshMoney = () => {
+    txs.reload()
+    profit.reload()
+    setRefreshKey((k) => k + 1)
+  }
   const [error, setError] = useState('')
 
   const age = daysSince(crop.sowing_date)
@@ -107,9 +118,25 @@ export default function CropPanel({ crop, farm, onClose, onEdit, onChanged }: { 
           <AmountWithPerAcre amount={profit.data?.profit} acres={crop.area_acres} size="lg" />
         </div>
 
-        <p className="mt-4 text-xs text-stone-500">Expense and income entry, stage-wise spend and task lists arrive in the next steps.</p>
+        <section className="mt-6">
+          <h3 className="mb-3 text-sm font-semibold text-stone-800">Expense by stage</h3>
+          <StageSpend cropId={crop.id} refreshKey={refreshKey} />
+        </section>
+
+        <section className="mt-6">
+          <h3 className="mb-3 text-sm font-semibold text-stone-800">Entries</h3>
+          <EntryList
+            rows={txs.data ?? []}
+            acres={crop.area_acres}
+            onAdd={(type) => setEntry({ start: { entryType: type, scope: 'crop', cropId: crop.id, stageId: crop.current_stage_id ?? undefined }, tx: null })}
+            onOpen={(tx) => setEntry({ start: { entryType: tx.entry_type, scope: 'crop', cropId: crop.id }, tx })}
+          />
+        </section>
       </Sheet>
 
+      {entry && (
+        <TransactionForm start={entry.start} tx={entry.tx} onClose={() => setEntry(null)} onSaved={refreshMoney} />
+      )}
       {editStages && stages.data && (
         <StageEditor
           cropId={crop.id}
