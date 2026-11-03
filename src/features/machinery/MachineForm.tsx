@@ -7,8 +7,10 @@ import { MACHINE_TYPES, type Farm, type Machine } from '../../types/domain'
 import { dbMessage } from '../farms/data'
 
 export default function MachineForm({ machine, farms, onClose, onSaved }: { machine: Machine | null; farms: Farm[]; onClose: () => void; onSaved: () => void }) {
+  // Farm picker: farms in use, plus the machine's saved farm.
+  const farmOptions = farms.filter((x) => x.is_active || x.id === machine?.farm_id)
   const [f, setF] = useState({
-    farm_id: machine?.farm_id ?? farms[0]?.id ?? '',
+    farm_id: machine?.farm_id ?? farmOptions[0]?.id ?? '',
     name: machine?.name ?? '',
     type: machine?.type ?? 'tractor',
     purchase_date: machine?.purchase_date ?? '',
@@ -72,7 +74,7 @@ export default function MachineForm({ machine, farms, onClose, onSaved }: { mach
           </Field>
           <Field label="Farm *">
             <Select value={f.farm_id} onChange={set('farm_id')}>
-              {farms.map((farm) => <option key={farm.id} value={farm.id}>{farm.name}</option>)}
+              {farmOptions.map((farm) => <option key={farm.id} value={farm.id}>{farm.name}</option>)}
             </Select>
           </Field>
           <Field label="Purchase date"><TextInput type="date" value={f.purchase_date} onChange={set('purchase_date')} /></Field>

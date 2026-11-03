@@ -19,7 +19,9 @@ export default function CropForm({
   onClose: () => void
   onSaved: (id: string) => void
 }) {
-  const firstFarm = farms[0]
+  // Farm picker: farms in use, plus the crop's saved farm.
+  const farmOptions = farms.filter((x) => x.is_active || x.id === crop?.farm_id)
+  const firstFarm = farmOptions[0]
   const isCustomSeason = crop ? !(SEASONS as readonly string[]).includes(crop.season) : false
   const [f, setF] = useState({
     farm_id: crop?.farm_id ?? firstFarm?.id ?? '',
@@ -120,7 +122,7 @@ export default function CropForm({
           <Field label="Year *"><NumberInput inputMode="numeric" value={f.season_year} onChange={set('season_year')} /></Field>
           <Field label="Farm *">
             <Select value={f.farm_id} onChange={set('farm_id')}>
-              {farms.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+              {farmOptions.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
             </Select>
           </Field>
           <Field label="Area (acres) *" hint={farm ? `Farm size: ${formatAcres(farm.area_acres)}. Used for all per-acre figures.` : undefined}>
