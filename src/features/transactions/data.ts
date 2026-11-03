@@ -55,3 +55,23 @@ export async function openBill(path: string) {
   const { data, error } = await supabase.storage.from('bills').createSignedUrl(path, 600)
   if (!error && data) window.open(data.signedUrl, '_blank', 'noopener')
 }
+
+export type Totals = { expense: number; income: number; net: number }
+
+// Expense / income / net per farm (scope farm) or per machine (scope machinery).
+export function useScopeTotals(scope: 'farm' | 'machinery') {
+  const key = scope === 'farm' ? 'farm_id' : 'machinery_id'
+  const rows = useRows<{ farm_id: string; machinery_id: string | null; entry_type: string; net_amount: number }[]>(
+    () => supabase.from('transactions').select('farm_id, machinery_id, entry_type, net_amount').eq('scope', scope),
+    [scope],
+  )
+  const map: Record<string, Totals> = {}
+  for (const r of rows.data ?? []) {
+    const id = r[key] as string
+    const t = (map[id] ??= { expense: 0, income: 0, net: 0 })
+    if (r.entry_type === 'expense') t.expense += Number(r.net_amount)
+    else t.income += Number(r.net_amount)
+    t.net = t.income - t.expense
+  }
+  return { totals: map, reload: rows.reload }
+}

@@ -2,7 +2,7 @@
 
 Update at the end of every session: tick what is done, set the current step, add a dated line to the session log.
 
-**Current step:** Phase 3 — farm / machinery entry lists + full transaction list with stage / category chips (step 4).
+**Current step:** Phase 4/5 — Dashboard (home) + Tasks screens + Reports.
 
 ## Phase 0 — Setup
 - [x] Requirements analysis and v1 scope agreed
@@ -36,8 +36,8 @@ Update at the end of every session: tick what is done, set the current step, add
 - [x] Expense / income entry for crop (stage chips, item default stage, current stage), farm and machinery — qty × rate, subsidy / bonus, live net + per acre, new item inline, Save & add more (TransactionForm; quick add /add/expense, /add/income)
 - [x] Bill photo upload (private bills/<uid>/… ; signed link to open)
 - [x] Crop panel: expense by stage bars + entries list (tap to edit / delete)
-- [ ] Farm and machinery entry lists (Farm page, Machinery page)
-- [ ] Transaction list with filters (stage / category chips with totals)
+- [x] Farm and machinery entry lists (Farm card totals + /farm/:id/entries; Machinery expense / income / net + /machinery/:id/entries)
+- [x] Entries page (EntriesPage) for crop / farm / machine: expense / income / net tiles with per acre, type toggle, stage or category chips with ₹ and ₹/ac, cards on phone / table md+, bill link, tap to edit
 
 ## Phase 4 — Tasks
 - [x] Migration 0003_tasks.sql (tasks replace crop_checklist) — tested + applied to Supabase
@@ -70,3 +70,4 @@ Update at the end of every session: tick what is done, set the current step, add
 - 2026-11-03 — Step 1 done: login + responsive shell (lucide-react icons). Dev-only VITE_UI_PREVIEW=1 skips login for screenshot checks.
 - 2026-11-03 — Phase 2 screens: Farm, Machinery, Crops list + panel + stage editor; shared UI (Sheet, form, Chips, EmptyState, AmountWithPerAcre, lib/format, lib/perAcre, lib/useRows). Responsive check at 360/768/1280 with Playwright-mocked Supabase data; fixed stage editor wrap on phone and crop table columns.
 - 2026-11-03 — Step 3: expense / income entry + crop panel spend by stage and entries. Live DB sample data loaded for the owner: Sorathur Farm (5 ac), Power Tiller, Paddy White Ponni Samba 2026 (5 ac, stage Seeding), 10 crop expenses from reference app / Excel (₹29,830), machinery diesel ₹2,000 + sample hire-out ₹3,000, sample farm land tax ₹600, 3 own tasks + 34 guidance tasks. Entries marked 'Sample entry' in remarks are invented.
+- 2026-11-03 — Step 4: shared EntriesPage (crop / farm / machine), crop panel shows latest 5 + View all, Farm cards with farm totals, Machinery list with expense / income / net. Responsive check at 360/768/1280.

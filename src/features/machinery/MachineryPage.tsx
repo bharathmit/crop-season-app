@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Pencil, Plus } from 'lucide-react'
+import { useScopeTotals } from '../transactions/data'
 import Chips from '../../components/ui/Chips'
 import EmptyState, { PageHeader } from '../../components/ui/EmptyState'
 import { Button, ErrorText } from '../../components/ui/form'
@@ -14,6 +15,8 @@ import MachineForm from './MachineForm'
 export default function MachineryPage() {
   const farms = useFarms()
   const machines = useRows<Machine[]>(() => supabase.from('machinery').select('*').order('name'), [])
+  const navigate = useNavigate()
+  const { totals } = useScopeTotals('machinery')
   const [params, setParams] = useSearchParams()
   const [type, setType] = useState('all')
   const [editing, setEditing] = useState<Machine | null>(null)
@@ -66,15 +69,21 @@ export default function MachineryPage() {
           {/* Phone: cards */}
           <ul className="space-y-3 md:hidden">
             {shown.map((m) => (
-              <li key={m.id}>
-                <button onClick={() => setEditing(m)} className="w-full rounded-2xl border border-stone-200 bg-white p-4 text-left">
-                  <div className="flex items-center justify-between gap-2">
+              <li key={m.id} className="flex items-start rounded-2xl border border-stone-200 bg-white">
+                <Link to={`/machinery/${m.id}/entries`} className="min-w-0 flex-1 p-4">
+                  <div className="flex items-center gap-2">
                     <span className="truncate font-semibold">{m.name}</span>
                     <span className="shrink-0 rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-600">{capitalize(m.type)}</span>
                   </div>
                   <p className="mt-1 text-sm text-stone-600">{farmName(m.farm_id)} · Bought {formatDate(m.purchase_date)}</p>
+                  <p className="mt-2 text-sm">
+                    <span className="text-stone-500">Net </span>
+                    <span className={`font-semibold ${(totals[m.id]?.net ?? 0) < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatINR(totals[m.id]?.net ?? 0)}</span>
+                    <span className="text-xs text-stone-500"> · exp {formatINR(totals[m.id]?.expense ?? 0)} · inc {formatINR(totals[m.id]?.income ?? 0)}</span>
+                  </p>
                   {!m.is_active && <p className="mt-1 text-xs text-amber-700">Not in use</p>}
-                </button>
+                </Link>
+                <button aria-label={`Edit ${m.name}`} onClick={() => setEditing(m)} className="m-2 grid h-11 w-11 shrink-0 place-items-center rounded-full text-stone-500 hover:bg-stone-100"><Pencil className="h-4 w-4" /></button>
               </li>
             ))}
           </ul>
@@ -87,18 +96,26 @@ export default function MachineryPage() {
                   <th className="px-4 py-3 font-medium">Name</th>
                   <th className="px-4 py-3 font-medium">Type</th>
                   <th className="px-4 py-3 font-medium">Farm</th>
-                  <th className="px-4 py-3 font-medium">Purchase date</th>
-                  <th className="px-4 py-3 text-right font-medium">Purchase cost</th>
+                  <th className="hidden px-4 py-3 font-medium lg:table-cell">Purchase date</th>
+                  <th className="px-4 py-3 text-right font-medium">Expense</th>
+                  <th className="px-4 py-3 text-right font-medium">Income</th>
+                  <th className="px-4 py-3 text-right font-medium">Net</th>
+                  <th className="w-14 px-1 py-3"><span className="sr-only">Edit</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
                 {shown.map((m) => (
-                  <tr key={m.id} onClick={() => setEditing(m)} className="cursor-pointer hover:bg-stone-50">
+                  <tr key={m.id} onClick={() => navigate(`/machinery/${m.id}/entries`)} className="cursor-pointer hover:bg-stone-50">
                     <td className="px-4 py-3 font-medium">{m.name}{!m.is_active && <span className="ml-2 text-xs text-amber-700">Not in use</span>}</td>
                     <td className="px-4 py-3">{capitalize(m.type)}</td>
                     <td className="px-4 py-3">{farmName(m.farm_id)}</td>
-                    <td className="px-4 py-3">{formatDate(m.purchase_date)}</td>
-                    <td className="px-4 py-3 text-right">{m.purchase_cost == null ? '—' : formatINR(m.purchase_cost)}</td>
+                    <td className="hidden px-4 py-3 lg:table-cell">{formatDate(m.purchase_date)}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right">{formatINR(totals[m.id]?.expense ?? 0)}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right">{formatINR(totals[m.id]?.income ?? 0)}</td>
+                    <td className={`whitespace-nowrap px-4 py-3 text-right font-semibold ${(totals[m.id]?.net ?? 0) < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatINR(totals[m.id]?.net ?? 0)}</td>
+                    <td className="px-1 py-1">
+                      <button aria-label={`Edit ${m.name}`} onClick={(e) => { e.stopPropagation(); setEditing(m) }} className="grid h-11 w-11 place-items-center rounded-full text-stone-500 hover:bg-stone-100"><Pencil className="h-4 w-4" /></button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

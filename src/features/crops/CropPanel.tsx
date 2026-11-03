@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ListChecks, Pencil, Receipt, Settings2, Wallet, Wheat } from 'lucide-react'
 import AmountWithPerAcre from '../../components/AmountWithPerAcre'
 import Sheet from '../../components/ui/Sheet'
@@ -124,9 +125,14 @@ export default function CropPanel({ crop, farm, onClose, onEdit, onChanged }: { 
         </section>
 
         <section className="mt-6">
-          <h3 className="mb-3 text-sm font-semibold text-stone-800">Entries</h3>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-stone-800">Latest entries</h3>
+            <Link to={`/crops/${crop.id}/entries`} className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-green-800 hover:bg-green-50">
+              View all ({txs.data?.length ?? 0}) →
+            </Link>
+          </div>
           <EntryList
-            rows={txs.data ?? []}
+            rows={(txs.data ?? []).slice(0, 5)}
             acres={crop.area_acres}
             onAdd={(type) => setEntry({ start: { entryType: type, scope: 'crop', cropId: crop.id, stageId: crop.current_stage_id ?? undefined }, tx: null })}
             onOpen={(tx) => setEntry({ start: { entryType: tx.entry_type, scope: 'crop', cropId: crop.id }, tx })}

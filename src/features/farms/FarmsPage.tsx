@@ -1,5 +1,8 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { MapPin, Pencil, Plus } from 'lucide-react'
+import AmountWithPerAcre from '../../components/AmountWithPerAcre'
+import { useScopeTotals } from '../transactions/data'
 import EmptyState, { PageHeader } from '../../components/ui/EmptyState'
 import { Button, ErrorText } from '../../components/ui/form'
 import { capitalize, formatAcres } from '../../lib/format'
@@ -9,6 +12,7 @@ import { useFarms } from './data'
 
 export default function FarmsPage() {
   const { data: farms, error, loading, reload } = useFarms()
+  const { totals } = useScopeTotals('farm')
   const [editing, setEditing] = useState<Farm | null | 'new'>(null)
 
   const close = () => setEditing(null)
@@ -20,7 +24,7 @@ export default function FarmsPage() {
   return (
     <>
       <PageHeader
-        subtitle="Your land holdings. Farm expenses and income (borewell, fencing, lease, tax) are added here next."
+        subtitle="Your land holdings. Open a farm's expenses & income for borewell, fencing, lease, tax and more."
         action={<Button onClick={() => setEditing('new')}><Plus className="h-4 w-4" />Add farm</Button>}
       />
       <ErrorText>{error}</ErrorText>
@@ -53,6 +57,14 @@ export default function FarmsPage() {
                 <div><dt className="text-xs text-stone-500">Water</dt><dd className="truncate">{farm.water_source ?? '—'}</dd></div>
                 <div className="col-span-2"><dt className="text-xs text-stone-500">Soil</dt><dd className="truncate">{farm.soil_type ?? '—'}</dd></div>
               </dl>
+              <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-stone-50 p-3 text-xs">
+                <div><p className="text-stone-500">Farm expense</p><AmountWithPerAcre amount={totals[farm.id]?.expense ?? 0} acres={farm.area_acres} size="sm" /></div>
+                <div><p className="text-stone-500">Farm income</p><AmountWithPerAcre amount={totals[farm.id]?.income ?? 0} acres={farm.area_acres} size="sm" /></div>
+                <div><p className="text-stone-500">Net</p><AmountWithPerAcre amount={totals[farm.id]?.net ?? 0} acres={farm.area_acres} size="sm" /></div>
+              </div>
+              <Link to={`/farm/${farm.id}/entries`} className="mt-3 flex min-h-11 items-center justify-center rounded-lg border border-stone-300 text-sm font-medium text-green-800 hover:bg-green-50">
+                Farm expenses & income →
+              </Link>
             </li>
           ))}
         </ul>
