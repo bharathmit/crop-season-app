@@ -10,7 +10,10 @@ See, for each crop cycle, what was spent, what was earned, the cash profit, and 
    - Plots: name, survey number, area (acres), soil type, water source, owned/leased, lease rent per season
    - Seasons: name (Kuruvai / Samba / Navarai / custom), year, start and end month
    - Crops: name (English + Tamil), varieties, duration in days
-   - Stage templates per crop: order, name, day range, checklist items (Do / Watch / Save)
+   - Stages per crop: order, name, optional day range, checklist items (Do / Watch / Save)
+     - Default stages copied to every new crop: Preparation, Seeding, Transplanting, Growing, Fruiting, Harvesting, Post Harvest, Sold
+     - User can add a missing stage, rename, reorder, or deactivate one (e.g. no Transplanting for groundnut)
+     - A stage that already has expenses cannot be deleted, only deactivated
    - Expense categories and sub-categories (seeded, editable)
 2. **Crop cycle**: plot + season + crop + variety + area + sowing date; current stage suggested from days since sowing
 3. **Expense entry** (fast on a phone): date, crop cycle, stage (auto-suggested, editable), category, sub-category, item, qty, unit, rate, amount, payment mode, vendor, note, optional bill photo. Labour: workers × days × wage.

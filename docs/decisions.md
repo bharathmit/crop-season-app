@@ -4,6 +4,7 @@ Newest first. Each entry: date, decision, reason. Change a decision only with th
 
 | Date | Decision | Reason |
 | --- | --- | --- |
+| 2026-11-03 | Default stages for all crops: Preparation, Seeding, Transplanting, Growing, Fruiting, Harvesting, Post Harvest, Sold; editable per crop | Owner's list; one simple list fits all crops |
 | 2026-11-02 | Hosting: GitHub Pages via GitHub Actions, deploy on push to `main`; Supabase URL/key from repo secrets | Free, no extra account, automatic |
 | 2026-11-02 | Frontend: React + TypeScript + Vite + Tailwind CSS v4 + React Router | Fast setup, typed code, mobile-first styling |
 | 2026-11-02 | Backend: Supabase (Postgres, Auth, Storage, SQL views) — no custom API server | Least backend work; reports as SQL views |

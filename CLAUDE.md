@@ -46,7 +46,7 @@ docs/             requirements, decisions, data model, progress, stage templates
 
 ## Domain glossary
 - **Crop cycle**: one crop on one plot in one season (plot + season + crop + variety + area + sowing date). Every expense, income and checklist tick belongs to a crop cycle.
-- **Stage**: an ordered phase of a crop (paddy: land prep → nursery → transplanting → tillering → panicle initiation → flowering → grain filling → harvest). Defined in stage templates per crop.
+- **Stage**: an ordered phase of a crop. Default list for every crop: Preparation → Seeding → Transplanting → Growing → Fruiting → Harvesting → Post Harvest → Sold. Each crop gets its own copy; the user can add, rename, reorder or deactivate stages per crop.
 - **Cash profit**: income received − money paid out. Family labour and own-farm inputs are **not** costed (they may be logged by quantity only).
 - **Seasons**: Kuruvai, Samba, Navarai, or custom.
 

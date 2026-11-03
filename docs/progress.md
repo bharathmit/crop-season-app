@@ -2,7 +2,7 @@
 
 Update at the end of every session: tick what is done, set the current step, add a dated line to the session log.
 
-**Current step:** Phase 1 — design data model (docs/data-model.md) for owner review.
+**Current step:** Phase 1 — owner review of data model Part 1 (crops, stages, expenses); then Part 2.
 
 ## Phase 0 — Setup
 - [x] Requirements analysis and v1 scope agreed
@@ -47,3 +47,4 @@ Update at the end of every session: tick what is done, set the current step, add
 - 2026-11-02 — Requirements agreed; stack chosen (React + Supabase); project scaffold and Claude Code memory files created. Build passes.
 - 2026-11-02 — Added GitHub Pages auto-deploy workflow; router basename + Vite base path for Pages.
 - 2026-11-02 — Pushed to GitHub. Pending: owner sets Settings → Pages → Source = GitHub Actions, then re-run the deploy workflow.
+- 2026-11-03 — Default stage list agreed (Preparation → Sold, editable per crop). Paddy checklist remapped. Data model Part 1 drafted for review.
