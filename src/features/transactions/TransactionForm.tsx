@@ -84,7 +84,8 @@ export default function TransactionForm({ start, tx, onClose, onSaved }: { start
   useEffect(() => {
     if (!L) return
     if (!cropId && L.crops[0]) setCropId(L.crops[0].id)
-    if (!farmId && L.farms[0]) setFarmId(L.farms[0].id)
+    const firstFarm = L.farms.find((x) => x.is_active) ?? L.farms[0]
+    if (!farmId && firstFarm) setFarmId(firstFarm.id)
     if (!machineId && L.machines[0]) setMachineId(L.machines[0].id)
     if (tx && !categoryId) {
       const item = L.items.find((i) => i.id === tx.item_id)
@@ -96,6 +97,8 @@ export default function TransactionForm({ start, tx, onClose, onSaved }: { start
   const machine = L?.machines.find((m) => m.id === machineId)
   const farm = L?.farms.find((x) => x.id === (scope === 'crop' ? crop?.farm_id : scope === 'machinery' ? machine?.farm_id : farmId))
   const acres = scope === 'crop' ? crop?.area_acres : farm?.area_acres
+  // Farm picker: farms in use, plus the one already on this entry. (All farms stay in L for crop / machine lookups.)
+  const farmOptions = (L?.farms ?? []).filter((x) => x.is_active || x.id === farmId)
 
   const categories = useMemo(() => (L?.categories ?? []).filter((c) => c.scope === scope && c.entry_type === entryType), [L, scope, entryType])
   const items = useMemo(() => (L?.items ?? []).filter((i) => i.category_id === categoryId), [L, categoryId])
@@ -234,7 +237,7 @@ export default function TransactionForm({ start, tx, onClose, onSaved }: { start
   }
 
   const word = entryType === 'expense' ? 'expense' : 'income'
-  const noTargets = L && ((scope === 'crop' && !L.crops.length) || (scope === 'farm' && !L.farms.length) || (scope === 'machinery' && !L.machines.length))
+  const noTargets = L && ((scope === 'crop' && !L.crops.length) || (scope === 'farm' && !farmOptions.length) || (scope === 'machinery' && !L.machines.length))
 
   return (
     <Sheet
@@ -275,7 +278,7 @@ export default function TransactionForm({ start, tx, onClose, onSaved }: { start
                 {scope === 'farm' && (
                   <Field label="Farm *">
                     <Select value={farmId} onChange={(e) => setFarmId(e.target.value)}>
-                      {L.farms.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                      {farmOptions.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                     </Select>
                   </Field>
                 )}
