@@ -1,0 +1,155 @@
+import { useMemo, useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Plus } from 'lucide-react'
+import Chips from '../../components/ui/Chips'
+import EmptyState, { PageHeader } from '../../components/ui/EmptyState'
+import { Button, ErrorText } from '../../components/ui/form'
+import { daysSince, formatAcres, formatDate } from '../../lib/format'
+import { DEFAULT_STAGES } from '../../types/domain'
+import { useFarms } from '../farms/data'
+import CropForm from './CropForm'
+import CropPanel from './CropPanel'
+import { useCrops, type CropWithStage } from './data'
+
+function StageChip({ name }: { name: string | undefined }) {
+  return <span className="inline-block max-w-full truncate whitespace-nowrap rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">{name ?? '—'}</span>
+}
+
+export default function CropsPage() {
+  const farms = useFarms()
+  const crops = useCrops()
+  const { cropId } = useParams()
+  const navigate = useNavigate()
+  const [params, setParams] = useSearchParams()
+  const [stage, setStage] = useState('all')
+  const [editing, setEditing] = useState<CropWithStage | null>(null)
+  const adding = params.get('new') === '1'
+
+  const list = crops.data ?? []
+  const farmById = (id: string) => farms.data?.find((f) => f.id === id)
+
+  const chips = useMemo(() => {
+    const live = list.filter((c) => c.status !== 'closed')
+    const names = [...DEFAULT_STAGES] as string[]
+    for (const c of live) if (c.current_stage && !names.includes(c.current_stage.name)) names.push(c.current_stage.name)
+    return [
+      { key: 'all', label: 'All', count: live.length },
+      ...names.map((n) => ({ key: n, label: n, count: live.filter((c) => c.current_stage?.name === n).length })),
+      { key: 'closed', label: 'Closed', count: list.length - live.length },
+    ]
+  }, [list])
+
+  const shown =
+    stage === 'all'
+      ? list.filter((c) => c.status !== 'closed')
+      : stage === 'closed'
+        ? list.filter((c) => c.status === 'closed')
+        : list.filter((c) => c.status !== 'closed' && c.current_stage?.name === stage)
+
+  const selected = cropId ? list.find((c) => c.id === cropId) : undefined
+  const knownNames = Array.from(new Set(['Paddy', ...list.map((c) => c.crop_name)]))
+  const noFarm = !farms.loading && !farms.data?.length
+
+  const openNew = () => setParams({ new: '1' })
+  const closeForm = () => {
+    setEditing(null)
+    if (adding) setParams({})
+  }
+
+  return (
+    <>
+      <PageHeader
+        subtitle="One crop = one crop on one farm in one season."
+        action={!noFarm && <Button onClick={openNew}><Plus className="h-4 w-4" />Add crop</Button>}
+      />
+      <ErrorText>{crops.error ?? farms.error}</ErrorText>
+
+      {noFarm ? (
+        <EmptyState title="Add a farm first" text="Every crop is grown on a farm." action={<Link to="/farm" className="font-medium text-green-800">Go to Farm →</Link>} />
+      ) : crops.loading ? (
+        <p className="text-sm text-stone-500">Loading…</p>
+      ) : !list.length ? (
+        <EmptyState title="No crops yet" text="Add this season's crop. It gets the 8 stages and the paddy checklist as tasks." action={<Button onClick={openNew}><Plus className="h-4 w-4" />Add crop</Button>} />
+      ) : (
+        <>
+          <div className="mb-4"><Chips label="Crop stage" chips={chips} value={stage} onChange={setStage} /></div>
+
+          {!shown.length && <p className="rounded-2xl bg-white p-6 text-center text-sm text-stone-500">No crops in this stage.</p>}
+
+          {/* Phone: cards */}
+          <ul className="space-y-3 md:hidden">
+            {shown.map((c) => {
+              const age = daysSince(c.sowing_date)
+              return (
+                <li key={c.id}>
+                  <Link to={`/crops/${c.id}`} className="block rounded-2xl border border-stone-200 bg-white p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold">{c.crop_name}{c.variety && <span className="font-normal text-stone-500"> · {c.variety}</span>}</p>
+                        <p className="text-sm text-stone-600">{c.season} {c.season_year} · {formatAcres(c.area_acres)}</p>
+                      </div>
+                      <StageChip name={c.current_stage?.name} />
+                    </div>
+                    <p className="mt-2 text-xs text-stone-500">{farmById(c.farm_id)?.name} · {age == null ? 'No sowing date' : `${age} days old`}</p>
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+
+          {/* Tablet / desktop: table */}
+          {shown.length > 0 && (
+            <div className="hidden overflow-hidden rounded-2xl border border-stone-200 bg-white md:block">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-stone-50 text-stone-600">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Crop</th>
+                    <th className="px-4 py-3 font-medium">Season</th>
+                    <th className="hidden px-4 py-3 font-medium lg:table-cell">Farm</th>
+                    <th className="px-4 py-3 font-medium">Area</th>
+                    <th className="px-4 py-3 font-medium">Age</th>
+                    <th className="px-4 py-3 font-medium">Stage</th>
+                    <th className="hidden px-4 py-3 font-medium lg:table-cell">Sowing date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {shown.map((c) => {
+                    const age = daysSince(c.sowing_date)
+                    return (
+                      <tr key={c.id} onClick={() => navigate(`/crops/${c.id}`)} className={`cursor-pointer hover:bg-stone-50 ${c.id === cropId ? 'bg-green-50' : ''}`}>
+                        <td className="px-4 py-3 font-medium">{c.crop_name}{c.variety && <span className="font-normal text-stone-500"> · {c.variety}</span>}</td>
+                        <td className="whitespace-nowrap px-4 py-3">{c.season} {c.season_year}</td>
+                        <td className="hidden px-4 py-3 lg:table-cell">{farmById(c.farm_id)?.name}</td>
+                        <td className="whitespace-nowrap px-4 py-3">{formatAcres(c.area_acres)}</td>
+                        <td className="whitespace-nowrap px-4 py-3">{age == null ? '—' : `${age} d`}</td>
+                        <td className="px-4 py-3"><StageChip name={c.current_stage?.name} /></td>
+                        <td className="hidden whitespace-nowrap px-4 py-3 lg:table-cell">{formatDate(c.sowing_date)}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {selected && !editing && (
+        <CropPanel crop={selected} farm={farmById(selected.farm_id)} onClose={() => navigate('/crops')} onEdit={() => setEditing(selected)} onChanged={crops.reload} />
+      )}
+      {(adding || editing) && farms.data && (
+        <CropForm
+          crop={editing}
+          farms={farms.data}
+          knownNames={knownNames}
+          onClose={closeForm}
+          onSaved={(id) => {
+            setEditing(null)
+            crops.reload()
+            navigate(id ? `/crops/${id}` : '/crops', { replace: true })
+          }}
+        />
+      )}
+    </>
+  )
+}

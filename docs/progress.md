@@ -2,7 +2,7 @@
 
 Update at the end of every session: tick what is done, set the current step, add a dated line to the session log.
 
-**Current step:** Phase 2 — Farms, Machinery, Crops screens (+ stage editor).
+**Current step:** Phase 3 — Add expense / income (crop with stage, farm, machinery; live per acre).
 
 ## Phase 0 — Setup
 - [x] Requirements analysis and v1 scope agreed
@@ -26,9 +26,10 @@ Update at the end of every session: tick what is done, set the current step, add
 - [x] Call seed_my_defaults() after login (once per page load; idempotent)
 - [x] Responsive app shell: bottom bar + floating + (phone), icon sidebar (md), labelled sidebar (lg), quick-add sheet — checked at 360 / 768 / 1280
 - [ ] Owner: set Supabase Auth Site URL + redirect URL to the GitHub Pages address; disable sign-ups after creating the account
-- [ ] Farms CRUD
-- [ ] Machinery CRUD
-- [ ] Crops CRUD (season, year, acres, harvest) + stage editor (add / rename / reorder / hide)
+- [x] Farms CRUD (Farm page: cards, add / edit / delete)
+- [x] Machinery CRUD (type chips, cards on phone / table md+)
+- [x] Crops CRUD (season, year, acres, harvest) + stage chips list + crop panel (current stage, expense / income / tasks / yield tiles with per acre) + stage editor (add / rename / reorder / hide / delete)
+- [x] Migration 0004_crop_current_stage.sql — crops.current_stage_id (first stage on insert) — tested + applied
 - [ ] Categories + items editor
 
 ## Phase 3 — Transactions
@@ -65,3 +66,4 @@ Update at the end of every session: tick what is done, set the current step, add
 - 2026-11-03 — Added tasks (crop stage / farm / machinery) via 0003_tasks.sql; guidance checklist now copied as tasks; applied to Supabase, advisor clean.
 - 2026-11-03 — Standing rule added: responsive UI on every screen (CLAUDE.md › Responsive UI).
 - 2026-11-03 — Step 1 done: login + responsive shell (lucide-react icons). Dev-only VITE_UI_PREVIEW=1 skips login for screenshot checks.
+- 2026-11-03 — Phase 2 screens: Farm, Machinery, Crops list + panel + stage editor; shared UI (Sheet, form, Chips, EmptyState, AmountWithPerAcre, lib/format, lib/perAcre, lib/useRows). Responsive check at 360/768/1280 with Playwright-mocked Supabase data; fixed stage editor wrap on phone and crop table columns.

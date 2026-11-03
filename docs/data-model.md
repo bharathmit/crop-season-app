@@ -54,6 +54,7 @@ each = Σ income.net_amount − Σ expense.net_amount
 | gross_yield_qtl | numeric(10,2) | |
 | moisture_loss_pct | numeric(5,2) default 5 | |
 | net_yield_qtl | numeric(10,2) generated | gross × (1 − moisture / 100) |
+| current_stage_id | uuid fk → crop_stages | stage the crop is in now; first stage on insert (migration 0004) |
 
 On insert: copy the 8 default stages into `crop_stages`, and matching `stage_guidance` rows into `tasks` (source = guidance).
 

@@ -23,7 +23,7 @@ Every screen must work on phone, tablet and desktop. Mobile-first Tailwind: base
 - **Forms and detail views:** full-screen sheet on phone; modal or side panel from `md` up. One column on phone, two from `md`.
 - **Touch:** tap targets at least 44 × 44 px; inputs at least 16 px text (no iOS zoom); numeric fields use `inputmode="decimal"`.
 - **Charts and tiles:** fluid width; tiles 2 per row on phone, 3–4 on desktop.
-- **Done check:** run `VITE_UI_PREVIEW=1 npx vite` (dev only, skips login), then before marking a UI step done, screenshot it with Playwright at **360 × 800, 768 × 1024 and 1280 × 800** and fix any overflow, cut-off text or overlap.
+- **Done check:** run `VITE_UI_PREVIEW=1 npx vite` (dev only, skips login), then before marking a UI step done, screenshot it with Playwright (mock Supabase REST with `context.route('**/rest/v1/**')` sample rows so lists render) at **360 × 800, 768 × 1024 and 1280 × 800** and fix any overflow, cut-off text or overlap.
 
 ## Stack
 - React 19 + TypeScript + Vite

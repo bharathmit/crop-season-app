@@ -18,8 +18,8 @@ export const quickAdd: NavItem[] = [
   { to: '/add/expense', label: 'Expense', icon: Receipt },
   { to: '/add/income', label: 'Income', icon: Wallet },
   { to: '/add/task', label: 'Task', icon: ListTodo },
-  { to: '/add/crop', label: 'Crop', icon: Sprout },
-  { to: '/add/machine', label: 'Machine', icon: Tractor },
+  { to: '/crops?new=1', label: 'Crop', icon: Sprout },
+  { to: '/machinery?new=1', label: 'Machine', icon: Tractor },
 ]
 
 export function titleFor(pathname: string): string {

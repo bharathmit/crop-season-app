@@ -26,6 +26,7 @@ await run(`select seed_my_defaults(); select seed_my_defaults();`)
 await q(`select (select count(*) from categories) cats, (select count(*) from items) items, (select count(*) from stage_guidance) guidance`, 'seeded (idempotent)')
 const [farm] = await q(`insert into farms (name, area_acres) values ('Villupuram', 10) returning id`)
 const [crop] = await q(`insert into crops (farm_id, crop_name, variety, season, season_year, area_acres, gross_yield_qtl) values ('${farm.id}','paddy','White Ponni','Samba',2026,5.5,150) returning id, net_yield_qtl`, 'crop')
+await q(`select c.crop_name, s.name current_stage from crops c join crop_stages s on s.id=c.current_stage_id`, 'current stage on insert')
 await q(`select s.sort_order, s.name, count(k.id) guidance_tasks from crop_stages s left join tasks k on k.crop_stage_id=s.id where s.crop_id='${crop.id}' group by s.id order by s.sort_order`, 'auto stages + guidance tasks')
 const [mach] = await q(`insert into machinery (farm_id, name, type) values ('${farm.id}','Tractor','tractor') returning id`)
 const item = (n) => `(select id from items where name='${n}')`
@@ -60,6 +61,7 @@ await q(`select year, crop_net, farm_net, machinery_net, overall_profit, overall
 for (const [label, sql] of [
   ['wrong scope item', `insert into transactions (entry_type, scope, farm_id, item_id, start_date, amount) values ('expense','farm','${farm.id}',${item('Diesel')},'2026-01-01',1)`],
   ['task stage from other crop', `insert into tasks (scope, crop_id, crop_stage_id, title) values ('crop','${crop.id}',(select id from crop_stages where crop_id<>'${crop.id}' limit 1),'x')`],
+  ['current stage from other crop', `update crops set current_stage_id=gen_random_uuid() where id='${crop.id}'`],
   ['crop without stage', `insert into transactions (entry_type, scope, crop_id, item_id, start_date, amount) values ('expense','crop','${crop.id}',${item('Pump Set Diesel')},'2026-01-01',1)`],
   ['delete used stage', `delete from crop_stages where id=${stage('Seeding')}`],
 ]) { try { await run(sql); console.log('FAIL (allowed):', label) } catch (e) { console.log('blocked OK:', label, '→', e.message.split('\n')[0]) } }
