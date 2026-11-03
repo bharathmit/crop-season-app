@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Plus, Receipt, Wallet } from 'lucide-react'
+import { ArrowLeftRight, ArrowRight, Fence, ListTodo, Plus, Receipt, Sprout, Tractor, Wallet } from 'lucide-react'
 import MoneyTiles, { NetIcon, TILE } from '../../components/MoneyTiles'
 import PeriodFilter from '../../components/PeriodFilter'
 import EmptyState from '../../components/ui/EmptyState'
-import { Button, ErrorText, Select } from '../../components/ui/form'
+import { Button, ErrorText } from '../../components/ui/form'
 import { formatAcres, formatINR, netClass, todayISO } from '../../lib/format'
 import { inRange, usePeriod } from '../../lib/period'
 import { supabase } from '../../lib/supabase'
@@ -27,20 +27,30 @@ type CropProfit = { crop_id: string; crop_name: string; variety: string | null; 
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
+// Distinct colour per row (text + bar), in order.
+const PALETTE = [
+  ['text-red-700', 'bg-red-400'], ['text-orange-700', 'bg-orange-400'], ['text-amber-700', 'bg-amber-400'], ['text-lime-700', 'bg-lime-500'],
+  ['text-emerald-700', 'bg-emerald-500'], ['text-teal-700', 'bg-teal-500'], ['text-sky-700', 'bg-sky-500'], ['text-indigo-700', 'bg-indigo-400'],
+  ['text-violet-700', 'bg-violet-400'], ['text-pink-700', 'bg-pink-400'],
+] as const
+
 function Bars({ rows }: { rows: { label: string; value: number; extra: string }[] }) {
   const max = Math.max(1, ...rows.map((r) => r.value))
   if (!rows.length) return <p className="text-sm text-stone-500">No expenses in this period.</p>
   return (
     <ul className="space-y-3">
-      {rows.map((r) => (
-        <li key={r.label} className="text-sm">
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="truncate">{r.label}</span>
-            <span className="shrink-0"><span className="font-medium">{formatINR(r.value)}</span> <span className="text-xs text-stone-500">{r.extra}</span></span>
-          </div>
-          <div className="mt-1 h-2 rounded-full bg-stone-100"><div className="h-2 rounded-full bg-red-400" style={{ width: `${(r.value / max) * 100}%` }} /></div>
-        </li>
-      ))}
+      {rows.map((r, i) => {
+        const [text, bar] = PALETTE[i % PALETTE.length]
+        return (
+          <li key={r.label} className="text-sm">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className={`truncate font-medium ${text}`}>{r.label}</span>
+              <span className="shrink-0"><span className={`font-semibold ${text}`}>{formatINR(r.value)}</span> <span className="text-xs text-stone-500">{r.extra}</span></span>
+            </div>
+            <div className="mt-1 h-2 rounded-full bg-white/80"><div className={`h-2 rounded-full ${bar}`} style={{ width: `${(r.value / max) * 100}%` }} /></div>
+          </li>
+        )
+      })}
     </ul>
   )
 }
@@ -51,7 +61,8 @@ const tile = 'flex items-start gap-3 rounded-2xl border p-4'
 export default function HomePage() {
   const farms = useFarms()
   const [farmPick, setFarmPick] = useState('')
-  const farm = farms.data?.find((f) => f.id === farmPick) ?? farms.data?.[0]
+  const farmList = farms.data?.filter((f) => f.is_active) ?? []
+  const farm = farmList.find((f) => f.id === farmPick) ?? farmList[0] ?? farms.data?.[0]
   const farmId = farm?.id ?? ''
   const acres = farm?.area_acres ?? 0
 
@@ -148,18 +159,20 @@ export default function HomePage() {
 
       {/* Farm + period */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className={`${card} flex items-center justify-between gap-3 md:min-w-80`}>
-          <div className="min-w-0">
-            {(farms.data?.length ?? 0) > 1 ? (
-              <Select aria-label="Farm" value={farmId} onChange={(e) => setFarmPick(e.target.value)} className="font-semibold">
-                {farms.data!.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-              </Select>
-            ) : (
-              <p className="truncate font-semibold">{farm?.name}</p>
-            )}
+        <div className={`${tile} items-center border-emerald-100 bg-emerald-50 md:min-w-80`}>
+          <Fence aria-hidden className="h-5 w-5 shrink-0 text-emerald-700" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-semibold">{farm?.name}</p>
             <p className="text-sm text-stone-500">{formatAcres(acres)}</p>
           </div>
-          <Link to={`/farm/${farmId}/entries`} aria-label="Farm entries" className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-green-50 text-green-800"><ArrowRight className="h-5 w-5" /></Link>
+          {/* Switch farm: the icon opens the phone / browser picker of farms in use. */}
+          <label title="Switch farm" className={`relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-emerald-800 shadow-sm ${farmList.length > 1 ? 'cursor-pointer hover:bg-emerald-100' : 'opacity-50'}`}>
+            <ArrowLeftRight aria-hidden className="h-5 w-5" />
+            <span className="sr-only">Switch farm</span>
+            <select value={farmId} onChange={(e) => setFarmPick(e.target.value)} disabled={farmList.length < 2} className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-default">
+              {farmList.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+            </select>
+          </label>
         </div>
         <div className="md:[&>div]:mb-0"><PeriodFilter period={period} /></div>
             </div>
@@ -169,7 +182,7 @@ export default function HomePage() {
         {/* Owner's colours: blue net profit (red / green amount), green income, red expense */}
         <div className={`${tile} col-span-2 lg:col-span-1 ${TILE.net.box}`}>
           <NetIcon net={income - expense} className="mt-0.5 h-5 w-5 shrink-0" />
-          <div className="min-w-0"><p className="text-xs text-stone-600">Net profit (crop + farm + machinery)</p><p className={`text-xl font-semibold ${netClass(income - expense)}`}>{formatINR(income - expense)}</p></div>
+          <div className="min-w-0"><p className="text-xs text-stone-600">Net profit<span className="block text-[11px] text-stone-500">(crop + farm + machinery)</span></p><p className={`text-xl font-semibold ${netClass(income - expense)}`}>{formatINR(income - expense)}</p></div>
         </div>
         <div className={`${tile} ${TILE.income.box}`}>
           <Wallet aria-hidden className={`mt-0.5 h-5 w-5 shrink-0 ${TILE.income.icon}`} />
@@ -179,17 +192,28 @@ export default function HomePage() {
           <Receipt aria-hidden className={`mt-0.5 h-5 w-5 shrink-0 ${TILE.expense.icon}`} />
           <div className="min-w-0"><p className="text-xs text-stone-600">Expense</p><p className="truncate text-base font-semibold text-stone-900">{formatINR(expense)}</p></div>
         </div>
-        <Link to="/tasks" className={`${card} col-span-2 bg-amber-50 lg:col-span-1`}>
-          <p className="text-xs text-stone-500">Open tasks</p>
-          <p className="text-xl font-semibold">{farmTasks.length}</p>
-          <p className="text-xs text-stone-500"><span className={overdue.length ? 'font-medium text-red-700' : ''}>{overdue.length} overdue</span> · {dueSoon.length} due soon</p>
+        <Link to="/tasks" className={`${tile} col-span-2 border-amber-100 bg-amber-50 lg:col-span-1`}>
+          <ListTodo aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+          <div className="min-w-0">
+            <p className="text-xs text-stone-600">Open tasks</p>
+            <p className="text-xl font-semibold">{farmTasks.length}</p>
+            <p className="text-xs text-stone-500"><span className={overdue.length ? 'font-medium text-red-700' : ''}>{overdue.length} overdue</span> · {dueSoon.length} due soon</p>
+          </div>
         </Link>
       </div>
 
       {/* Overall breakdown */}
-      <div className={`${card} grid grid-cols-3 gap-2`}>
-        {([['Crops', 'crop'], ['Farm', 'farm'], ['Machinery', 'machinery']] as const).map(([label, s]) => (
-          <div key={s}><p className="text-xs text-stone-500">{label} net</p><p className={`text-sm font-semibold ${netClass(netOf(s))}`}>{formatINR(netOf(s))}</p></div>
+      {/* Each opens its page: Crops list, this farm's entries, Machinery list */}
+      <div className={`${card} grid grid-cols-3 gap-2 p-2 sm:p-3`}>
+        {([
+          ['Crops', 'crop', Sprout, 'border-lime-100 bg-lime-50 hover:border-lime-300', 'text-lime-700', '/crops'],
+          ['Farm', 'farm', Fence, 'border-orange-100 bg-orange-50 hover:border-orange-300', 'text-orange-700', `/farm/${farmId}/entries`],
+          ['Machinery', 'machinery', Tractor, 'border-purple-100 bg-purple-50 hover:border-purple-300', 'text-purple-700', '/machinery'],
+        ] as const).map(([label, s, Icon, box, icon, to]) => (
+          <Link key={s} to={to} className={`min-w-0 rounded-xl border px-2 py-2 sm:px-3 ${box}`}>
+            <span className="flex items-start gap-1 text-xs leading-tight text-stone-600"><Icon aria-hidden className={`h-4 w-4 shrink-0 ${icon}`} /><span>{label} net</span></span>
+            <span className={`mt-0.5 block truncate text-sm font-semibold ${netClass(netOf(s))}`}>{formatINR(netOf(s))}</span>
+          </Link>
         ))}
       </div>
 
@@ -229,10 +253,10 @@ export default function HomePage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Expense split */}
-        <section className={card}>
+        <section className="rounded-2xl border border-teal-100 bg-teal-50/60 p-4">
           <div className="mb-3 flex items-center justify-between gap-2">
             <div className="min-w-0"><h3 className="text-sm font-semibold">Expense by {split}</h3>{cropName && <p className="truncate text-xs text-stone-500">{cropName}</p>}</div>
-            <div role="radiogroup" aria-label="Split by" className="flex gap-1 rounded-lg bg-stone-100 p-1">
+            <div role="radiogroup" aria-label="Split by" className="flex gap-1 rounded-lg bg-white/70 p-1">
               {(['stage', 'category'] as const).map((k) => (
                 <button key={k} role="radio" aria-checked={split === k} onClick={() => setSplit(k)} className={`min-h-9 rounded-md px-3 text-xs font-medium ${split === k ? 'bg-white text-green-800 shadow-sm' : 'text-stone-600'}`}>{k === 'stage' ? 'Stage' : 'Category'}</button>
               ))}
@@ -243,7 +267,7 @@ export default function HomePage() {
         </section>
 
         {/* Expense vs income by month */}
-        <section className={card}>
+        <section className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
           <h3 className="mb-3 truncate text-sm font-semibold">Expense vs income{cropName ? ` – ${cropName}` : ''}</h3>
           <div className="flex gap-2">
           {/* Amount axis */}
@@ -268,7 +292,7 @@ export default function HomePage() {
       </div>
 
       {/* Tasks (end of page) */}
-        <section className={card}>
+        <section className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4">
           <div className="mb-1 flex items-center justify-between">
             <h3 className="text-sm font-semibold">Tasks: overdue & due soon</h3>
             <Link to="/tasks" className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-green-800 hover:bg-green-50">All tasks →</Link>
