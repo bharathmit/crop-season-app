@@ -184,13 +184,13 @@ export default function HomePage() {
           <NetIcon net={income - expense} className="mt-0.5 h-5 w-5 shrink-0" />
           <div className="min-w-0"><p className="text-xs text-stone-600">Net profit<span className="block text-[11px] text-stone-500">(crop + farm + machinery)</span></p><p className={`text-xl font-semibold ${netClass(income - expense)}`}>{formatINR(income - expense)}</p></div>
         </div>
-        <div className={`${tile} ${TILE.income.box}`}>
-          <Wallet aria-hidden className={`mt-0.5 h-5 w-5 shrink-0 ${TILE.income.icon}`} />
-          <div className="min-w-0"><p className="text-xs text-stone-600">Income</p><p className="truncate text-base font-semibold text-stone-900">{formatINR(income)}</p></div>
-        </div>
         <div className={`${tile} ${TILE.expense.box}`}>
           <Receipt aria-hidden className={`mt-0.5 h-5 w-5 shrink-0 ${TILE.expense.icon}`} />
           <div className="min-w-0"><p className="text-xs text-stone-600">Expense</p><p className="truncate text-base font-semibold text-stone-900">{formatINR(expense)}</p></div>
+        </div>
+        <div className={`${tile} ${TILE.income.box}`}>
+          <Wallet aria-hidden className={`mt-0.5 h-5 w-5 shrink-0 ${TILE.income.icon}`} />
+          <div className="min-w-0"><p className="text-xs text-stone-600">Income</p><p className="truncate text-base font-semibold text-stone-900">{formatINR(income)}</p></div>
         </div>
         <Link to="/tasks" className={`${tile} col-span-2 border-amber-100 bg-amber-50 lg:col-span-1`}>
           <ListTodo aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
