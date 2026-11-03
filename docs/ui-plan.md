@@ -30,7 +30,7 @@ All screens follow the **Responsive UI** rules in `CLAUDE.md` (mobile-first; che
    - Stage timeline: 8 stages with spend each; tap a stage → its expenses + checklist.
    - Edit stages: add, rename, reorder, hide.
 4. **Expense / income list** for a crop, farm or machine
-   - Chips at the top: All + each **stage** (crop) or **category** (farm / machinery), showing the ₹ total and per acre for each.
+   - Crop: chips for All + each **stage** with ₹ total and per acre. Farm / machinery: period filter (This month / This year / Custom / All) and a **category dropdown** listing only categories with entries, with ₹ totals (no per acre).
    - Rows: item, amount, per acre, stage chip, category, date, bill icon.
 5. **Add expense / income** (modal on desktop, full screen on mobile)
    - Expense / Income toggle; scope: Crop · Farm · Machinery; pick the crop / farm / machine.

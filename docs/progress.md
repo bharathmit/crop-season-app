@@ -76,3 +76,4 @@ Update at the end of every session: tick what is done, set the current step, add
 - 2026-11-03 — Reports page with CSV export and print. Responsive check at 360/768/1280 (category table: badge under name, % hidden on phone).
 - 2026-11-03 — Settings page done; v1 feature-complete. Responsive check at 360/768/1280 (fixed guidance row layout).
 - 2026-11-03 — Fix: Edit expense/income sheet lost the saved item (category reset raced the lookups load). Known gap: entries whose item/category was deactivated still open with a blank item.
+- 2026-11-03 — Owner changes: no per acre for farm / machinery; period filter (This month / This year / Custom / All, default This year) on Farm, Machinery and farm / machine entries; category dropdown replaces chips on farm / machine entries; entry form opened from a crop, farm or machine hides the Expense/Income and Crop/Farm/Machine toggles. Responsive check at 360/768/1280.

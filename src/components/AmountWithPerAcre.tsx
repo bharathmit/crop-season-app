@@ -7,18 +7,20 @@ export default function AmountWithPerAcre({
   acres,
   className = '',
   size = 'md',
+  hidePerAcre = false,
 }: {
   amount: number | null | undefined
   acres: number | null | undefined
   className?: string
   size?: 'sm' | 'md' | 'lg'
+  hidePerAcre?: boolean // farm / machinery amounts: no per-acre line
 }) {
   const pa = perAcre(amount ?? 0, acres)
   const main = size === 'lg' ? 'text-xl font-semibold' : size === 'sm' ? 'text-sm font-medium' : 'text-base font-semibold'
   return (
     <span className={`inline-flex flex-col ${className}`}>
       <span className={main}>{formatINR(amount ?? 0)}</span>
-      <span className="text-xs text-stone-500">{pa == null ? '— / acre' : `${formatINR(pa)} / acre`}</span>
+      {!hidePerAcre && <span className="text-xs text-stone-500">{pa == null ? '— / acre' : `${formatINR(pa)} / acre`}</span>}
     </span>
   )
 }

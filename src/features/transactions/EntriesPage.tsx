@@ -3,10 +3,12 @@ import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Paperclip, Plus } from 'lucide-react'
 import AmountWithPerAcre from '../../components/AmountWithPerAcre'
 import Chips from '../../components/ui/Chips'
+import PeriodFilter from '../../components/PeriodFilter'
 import EmptyState from '../../components/ui/EmptyState'
-import { Button, ErrorText } from '../../components/ui/form'
+import { Button, ErrorText, Select } from '../../components/ui/form'
 import { formatAcres, formatDate, formatINR } from '../../lib/format'
 import { perAcre } from '../../lib/perAcre'
+import { inRange, usePeriod } from '../../lib/period'
 import { supabase } from '../../lib/supabase'
 import { useRows } from '../../lib/useRows'
 import type { EntryType, Scope } from '../../types/domain'
@@ -26,12 +28,12 @@ function useTarget(scope: Scope, id: string) {
     if (scope === 'farm') {
       const r = await supabase.from('farms').select('name, area_acres').eq('id', id).single()
       if (r.error) return { data: null, error: r.error }
-      return { data: { name: r.data.name, acres: r.data.area_acres, back: '/farm', sub: `Farm entries · ${formatAcres(r.data.area_acres)}` }, error: null }
+      return { data: { name: r.data.name, acres: r.data.area_acres, back: '/farm', sub: 'Farm entries' }, error: null }
     }
     const r = await supabase.from('machinery').select('name, farm:farms(name, area_acres)').eq('id', id).single<{ name: string; farm: { name: string; area_acres: number } | null }>()
     if (r.error) return { data: null, error: r.error }
     const acres = r.data.farm?.area_acres ?? 0
-    return { data: { name: r.data.name, acres, back: '/machinery', sub: `${r.data.farm?.name ?? ''} · per acre on ${formatAcres(acres)}` }, error: null }
+    return { data: { name: r.data.name, acres, back: '/machinery', sub: r.data.farm?.name ?? '' }, error: null }
   }, [scope, id])
 }
 
@@ -50,8 +52,11 @@ export default function EntriesPage({ scope }: { scope: Scope }) {
   const [group, setGroup] = useState('all')
   const [entry, setEntry] = useState<{ start: EntryStart; tx: TxRow | null } | null>(null)
 
-  const acres = target.data?.acres ?? 0
-  const all = txs.data ?? []
+  // Per acre and grouping by stage are for crops only; farm / machine get a period filter.
+  const isCrop = scope === 'crop'
+  const period = usePeriod()
+  const acres = isCrop ? (target.data?.acres ?? 0) : 0
+  const all = (txs.data ?? []).filter((t) => isCrop || inRange(t.start_date, period.range))
   const groupOf = (t: TxRow) => (scope === 'crop' ? (t.stage?.name ?? '—') : (t.item?.category?.name ?? '—'))
   const byType = type === 'all' ? all : all.filter((t) => t.entry_type === type)
   const sum = (rows: TxRow[]) => rows.reduce((a, t) => a + Number(t.net_amount) * (type === 'all' && t.entry_type === 'expense' ? -1 : 1), 0)
@@ -68,13 +73,15 @@ export default function EntriesPage({ scope }: { scope: Scope }) {
       ...keys.map(({ key }) => {
         const rows = byType.filter((t) => groupOf(t) === key)
         const total = sum(rows)
-        const pa = perAcre(total, acres)
+        const pa = isCrop ? perAcre(total, acres) : null
         return { key, label: key, count: `${formatINR(total)}${pa == null ? '' : ` · ${formatINR(pa)}/ac`}` }
       }),
     ]
   }, [byType, acres]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const shown = group === 'all' ? byType : byType.filter((t) => groupOf(t) === group)
+  // A category with no entries in the chosen period falls back to All.
+  const activeGroup = chips.some((c) => c.key === group) ? group : 'all'
+  const shown = activeGroup === 'all' ? byType : byType.filter((t) => groupOf(t) === activeGroup)
   const expense = all.filter((t) => t.entry_type === 'expense').reduce((a, t) => a + Number(t.net_amount), 0)
   const income = all.filter((t) => t.entry_type === 'income').reduce((a, t) => a + Number(t.net_amount), 0)
 
@@ -84,6 +91,7 @@ export default function EntriesPage({ scope }: { scope: Scope }) {
     cropId: scope === 'crop' ? id : undefined,
     farmId: scope === 'farm' ? id : undefined,
     machineId: scope === 'machinery' ? id : undefined,
+    locked: true,
   })
   const groupLabel = scope === 'crop' ? 'Stage' : 'Category'
 
@@ -106,11 +114,13 @@ export default function EntriesPage({ scope }: { scope: Scope }) {
       </div>
       <ErrorText>{target.error ?? txs.error}</ErrorText>
 
+      {!isCrop && <PeriodFilter period={period} />}
+
       {/* Totals: 2 per row on phone, 3 from md */}
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3">
-        <div className="rounded-2xl border border-red-100 bg-red-50 p-3"><p className="text-xs text-stone-600">Expense</p><AmountWithPerAcre amount={expense} acres={acres} /></div>
-        <div className="rounded-2xl border border-green-100 bg-green-50 p-3"><p className="text-xs text-stone-600">Income</p><AmountWithPerAcre amount={income} acres={acres} /></div>
-        <div className="col-span-2 rounded-2xl border border-stone-200 bg-white p-3 md:col-span-1"><p className="text-xs text-stone-600">Net (income − expense)</p><AmountWithPerAcre amount={income - expense} acres={acres} /></div>
+        <div className="rounded-2xl border border-red-100 bg-red-50 p-3"><p className="text-xs text-stone-600">Expense</p><AmountWithPerAcre amount={expense} acres={acres} hidePerAcre={!isCrop} /></div>
+        <div className="rounded-2xl border border-green-100 bg-green-50 p-3"><p className="text-xs text-stone-600">Income</p><AmountWithPerAcre amount={income} acres={acres} hidePerAcre={!isCrop} /></div>
+        <div className="col-span-2 rounded-2xl border border-stone-200 bg-white p-3 md:col-span-1"><p className="text-xs text-stone-600">Net (income − expense)</p><AmountWithPerAcre amount={income - expense} acres={acres} hidePerAcre={!isCrop} /></div>
       </div>
 
       <div className="mb-3 flex gap-1 rounded-xl bg-stone-100 p-1 sm:inline-flex" role="radiogroup" aria-label="Entry type">
@@ -120,7 +130,16 @@ export default function EntriesPage({ scope }: { scope: Scope }) {
           </button>
         ))}
       </div>
-      <div className="mb-4"><Chips label={groupLabel} chips={chips} value={group} onChange={setGroup} /></div>
+      {isCrop ? (
+        <div className="mb-4"><Chips label={groupLabel} chips={chips} value={activeGroup} onChange={setGroup} /></div>
+      ) : (
+        <label className="mb-4 block sm:max-w-sm">
+          <span className="sr-only">{groupLabel}</span>
+          <Select value={activeGroup} onChange={(e) => setGroup(e.target.value)}>
+            {chips.map((c) => <option key={c.key} value={c.key}>{c.key === 'all' ? 'All categories' : c.label} · {c.count}</option>)}
+          </Select>
+        </label>
+      )}
 
       {txs.loading ? (
         <p className="text-sm text-stone-500">Loading…</p>
@@ -131,7 +150,7 @@ export default function EntriesPage({ scope }: { scope: Scope }) {
           {/* Phone: cards */}
           <ul className="space-y-2 md:hidden">
             {shown.map((t) => {
-              const pa = perAcre(t.net_amount, acres)
+              const pa = isCrop ? perAcre(t.net_amount, acres) : null
               const inc = t.entry_type === 'income'
               return (
                 <li key={t.id} className="flex items-center rounded-2xl border border-stone-200 bg-white">
@@ -165,14 +184,14 @@ export default function EntriesPage({ scope }: { scope: Scope }) {
                   <th className="hidden px-3 py-3 font-medium lg:table-cell">Qty × rate</th>
                   <th className="hidden px-3 py-3 text-right font-medium lg:table-cell">Subsidy / bonus</th>
                   <th className="px-3 py-3 text-right font-medium">Net</th>
-                  <th className="px-3 py-3 text-right font-medium">Per acre</th>
+                  {isCrop && <th className="px-3 py-3 text-right font-medium">Per acre</th>}
                   <th className="hidden px-3 py-3 font-medium lg:table-cell">Party</th>
                   <th className="w-12 px-1 py-3"><span className="sr-only">Bill</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
                 {shown.map((t) => {
-                  const pa = perAcre(t.net_amount, acres)
+                  const pa = isCrop ? perAcre(t.net_amount, acres) : null
                   const inc = t.entry_type === 'income'
                   return (
                     <tr key={t.id} onClick={() => setEntry({ start: startFor(t.entry_type), tx: t })} className="cursor-pointer hover:bg-stone-50">
@@ -182,7 +201,7 @@ export default function EntriesPage({ scope }: { scope: Scope }) {
                       <td className="hidden whitespace-nowrap px-3 py-3 lg:table-cell">{t.quantity != null && t.rate != null ? `${t.quantity} ${t.unit ?? ''} × ${formatINR(t.rate)}` : '—'}</td>
                       <td className="hidden px-3 py-3 text-right lg:table-cell">{t.govt_support ? formatINR(t.govt_support) : '—'}</td>
                       <td className={`whitespace-nowrap px-3 py-3 text-right font-semibold ${inc ? 'text-green-700' : ''}`}>{inc ? '+' : ''}{formatINR(t.net_amount)}</td>
-                      <td className="whitespace-nowrap px-3 py-3 text-right text-stone-600">{pa == null ? '—' : formatINR(pa)}</td>
+                      {isCrop && <td className="whitespace-nowrap px-3 py-3 text-right text-stone-600">{pa == null ? '—' : formatINR(pa)}</td>}
                       <td className="hidden px-3 py-3 lg:table-cell">{t.party ?? '—'}</td>
                       <td className="px-1 py-1">
                         {t.bill_path && (

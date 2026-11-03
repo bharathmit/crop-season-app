@@ -1,5 +1,6 @@
 import { supabase } from '../../lib/supabase'
 import { useRows } from '../../lib/useRows'
+import type { DateRange } from '../../lib/period'
 import type { Category, Crop, Farm, Item, Machine, Transaction } from '../../types/domain'
 
 export type EntryLookups = { farms: Farm[]; crops: Crop[]; machines: Machine[]; categories: Category[]; items: Item[] }
@@ -59,11 +60,19 @@ export async function openBill(path: string) {
 export type Totals = { expense: number; income: number; net: number }
 
 // Expense / income / net per farm (scope farm) or per machine (scope machinery).
-export function useScopeTotals(scope: 'farm' | 'machinery') {
+// Optional date range (start_date) for the period filter.
+export function useScopeTotals(scope: 'farm' | 'machinery', range?: DateRange) {
   const key = scope === 'farm' ? 'farm_id' : 'machinery_id'
+  const from = range?.from ?? null
+  const to = range?.to ?? null
   const rows = useRows<{ farm_id: string; machinery_id: string | null; entry_type: string; net_amount: number }[]>(
-    () => supabase.from('transactions').select('farm_id, machinery_id, entry_type, net_amount').eq('scope', scope),
-    [scope],
+    () => {
+      let q = supabase.from('transactions').select('farm_id, machinery_id, entry_type, net_amount').eq('scope', scope)
+      if (from) q = q.gte('start_date', from)
+      if (to) q = q.lte('start_date', to)
+      return q
+    },
+    [scope, from, to],
   )
   const map: Record<string, Totals> = {}
   for (const r of rows.data ?? []) {

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { MapPin, Pencil, Plus } from 'lucide-react'
 import AmountWithPerAcre from '../../components/AmountWithPerAcre'
+import PeriodFilter from '../../components/PeriodFilter'
+import { usePeriod } from '../../lib/period'
 import { useScopeTotals } from '../transactions/data'
 import EmptyState, { PageHeader } from '../../components/ui/EmptyState'
 import { Button, ErrorText } from '../../components/ui/form'
@@ -12,7 +14,8 @@ import { useFarms } from './data'
 
 export default function FarmsPage() {
   const { data: farms, error, loading, reload } = useFarms()
-  const { totals } = useScopeTotals('farm')
+  const period = usePeriod()
+  const { totals } = useScopeTotals('farm', period.range)
   const [editing, setEditing] = useState<Farm | null | 'new'>(null)
 
   const close = () => setEditing(null)
@@ -33,10 +36,12 @@ export default function FarmsPage() {
       ) : !farms?.length ? (
         <EmptyState
           title="Add your first farm"
-          text="Crops and machines belong to a farm. Its acres are used for farm and machinery per-acre figures."
+          text="Crops and machines belong to a farm. Add its acres, survey no., water and soil details."
           action={<Button onClick={() => setEditing('new')}><Plus className="h-4 w-4" />Add farm</Button>}
         />
       ) : (
+        <>
+        <PeriodFilter period={period} />
         <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
           {farms.map((farm) => (
             <li key={farm.id} className="rounded-2xl border border-stone-200 bg-white p-4">
@@ -58,9 +63,9 @@ export default function FarmsPage() {
                 <div className="col-span-2"><dt className="text-xs text-stone-500">Soil</dt><dd className="truncate">{farm.soil_type ?? '—'}</dd></div>
               </dl>
               <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-stone-50 p-3 text-xs">
-                <div><p className="text-stone-500">Farm expense</p><AmountWithPerAcre amount={totals[farm.id]?.expense ?? 0} acres={farm.area_acres} size="sm" /></div>
-                <div><p className="text-stone-500">Farm income</p><AmountWithPerAcre amount={totals[farm.id]?.income ?? 0} acres={farm.area_acres} size="sm" /></div>
-                <div><p className="text-stone-500">Net</p><AmountWithPerAcre amount={totals[farm.id]?.net ?? 0} acres={farm.area_acres} size="sm" /></div>
+                <div><p className="text-stone-500">Farm expense</p><AmountWithPerAcre amount={totals[farm.id]?.expense ?? 0} acres={farm.area_acres} size="sm" hidePerAcre /></div>
+                <div><p className="text-stone-500">Farm income</p><AmountWithPerAcre amount={totals[farm.id]?.income ?? 0} acres={farm.area_acres} size="sm" hidePerAcre /></div>
+                <div><p className="text-stone-500">Net</p><AmountWithPerAcre amount={totals[farm.id]?.net ?? 0} acres={farm.area_acres} size="sm" hidePerAcre /></div>
               </div>
               <Link to={`/farm/${farm.id}/entries`} className="mt-3 flex min-h-11 items-center justify-center rounded-lg border border-stone-300 text-sm font-medium text-green-800 hover:bg-green-50">
                 Farm expenses & income →
@@ -68,6 +73,7 @@ export default function FarmsPage() {
             </li>
           ))}
         </ul>
+        </>
       )}
       {editing && <FarmForm farm={editing === 'new' ? null : editing} onClose={close} onSaved={saved} />}
     </>

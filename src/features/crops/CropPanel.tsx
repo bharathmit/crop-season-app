@@ -155,8 +155,8 @@ export default function CropPanel({ crop, farm, onClose, onEdit, onChanged }: { 
           <EntryList
             rows={(txs.data ?? []).slice(0, 5)}
             acres={crop.area_acres}
-            onAdd={(type) => setEntry({ start: { entryType: type, scope: 'crop', cropId: crop.id, stageId: crop.current_stage_id ?? undefined }, tx: null })}
-            onOpen={(tx) => setEntry({ start: { entryType: tx.entry_type, scope: 'crop', cropId: crop.id }, tx })}
+            onAdd={(type) => setEntry({ start: { entryType: type, scope: 'crop', cropId: crop.id, stageId: crop.current_stage_id ?? undefined, locked: true }, tx: null })}
+            onOpen={(tx) => setEntry({ start: { entryType: tx.entry_type, scope: 'crop', cropId: crop.id, locked: true }, tx })}
           />
         </section>
       </Sheet>

@@ -3,6 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Pencil, Plus } from 'lucide-react'
 import { useScopeTotals } from '../transactions/data'
 import Chips from '../../components/ui/Chips'
+import PeriodFilter from '../../components/PeriodFilter'
+import { usePeriod } from '../../lib/period'
 import EmptyState, { PageHeader } from '../../components/ui/EmptyState'
 import { Button, ErrorText } from '../../components/ui/form'
 import { capitalize, formatDate, formatINR } from '../../lib/format'
@@ -16,7 +18,8 @@ export default function MachineryPage() {
   const farms = useFarms()
   const machines = useRows<Machine[]>(() => supabase.from('machinery').select('*').order('name'), [])
   const navigate = useNavigate()
-  const { totals } = useScopeTotals('machinery')
+  const period = usePeriod()
+  const { totals } = useScopeTotals('machinery', period.range)
   const [params, setParams] = useSearchParams()
   const [type, setType] = useState('all')
   const [editing, setEditing] = useState<Machine | null>(null)
@@ -64,6 +67,7 @@ export default function MachineryPage() {
         <EmptyState title="No machines yet" text="Add your tractor, power tiller, sprayer or pump set." action={<Button onClick={openNew}><Plus className="h-4 w-4" />Add machine</Button>} />
       ) : (
         <>
+          <PeriodFilter period={period} />
           <div className="mb-4"><Chips label="Machine type" chips={chips} value={type} onChange={setType} /></div>
 
           {/* Phone: cards */}

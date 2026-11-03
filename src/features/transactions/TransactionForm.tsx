@@ -18,6 +18,7 @@ export type EntryStart = {
   stageId?: string
   farmId?: string
   machineId?: string
+  locked?: boolean // opened from a crop / farm / machine page: hide the type and scope toggles
 }
 
 const NEW_ITEM = '__new__'
@@ -254,10 +255,10 @@ export default function TransactionForm({ start, tx, onClose, onSaved }: { start
         <p className="text-sm text-stone-500">{lookups.error ?? 'Loading…'}</p>
       ) : (
         <form onSubmit={(e: FormEvent) => { e.preventDefault(); void save(false) }} className="space-y-5">
-          <FormGrid>
+          {!start.locked && <FormGrid>
             <Segmented label="Entry type" value={entryType} onChange={setEntryType} options={[{ key: 'expense', label: 'Expense' }, { key: 'income', label: 'Income' }]} />
             <Segmented label="For" value={scope} onChange={setScope} options={[{ key: 'crop', label: 'Crop' }, { key: 'farm', label: 'Farm' }, { key: 'machinery', label: 'Machine' }]} />
-          </FormGrid>
+          </FormGrid>}
 
           {noTargets ? (
             <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">Add a {scope === 'machinery' ? 'machine' : scope} first.</p>
@@ -272,14 +273,14 @@ export default function TransactionForm({ start, tx, onClose, onSaved }: { start
                   </Field>
                 )}
                 {scope === 'farm' && (
-                  <Field label="Farm *" hint={farm ? `${formatAcres(farm.area_acres)} · per acre uses this` : undefined}>
+                  <Field label="Farm *">
                     <Select value={farmId} onChange={(e) => setFarmId(e.target.value)}>
                       {L.farms.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                     </Select>
                   </Field>
                 )}
                 {scope === 'machinery' && (
-                  <Field label="Machine *" hint={farm ? `${farm.name} · ${formatAcres(farm.area_acres)} · per acre uses the farm` : undefined}>
+                  <Field label="Machine *" hint={farm?.name}>
                     <Select value={machineId} onChange={(e) => setMachineId(e.target.value)}>
                       {L.machines.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                     </Select>
@@ -360,8 +361,8 @@ export default function TransactionForm({ start, tx, onClose, onSaved }: { start
 
               {/* Live totals with per acre */}
               <div className="grid grid-cols-2 gap-3 rounded-2xl border border-green-200 bg-green-50 p-4" aria-live="polite">
-                <div><p className="text-xs text-stone-600">Amount</p><AmountWithPerAcre amount={amount} acres={acres} size="sm" /></div>
-                <div><p className="text-xs text-stone-600">Net {word}</p><AmountWithPerAcre amount={net} acres={acres} /></div>
+                <div><p className="text-xs text-stone-600">Amount</p><AmountWithPerAcre amount={amount} acres={acres} size="sm" hidePerAcre={scope !== 'crop'} /></div>
+                <div><p className="text-xs text-stone-600">Net {word}</p><AmountWithPerAcre amount={net} acres={acres} hidePerAcre={scope !== 'crop'} /></div>
               </div>
 
               <FormGrid>
