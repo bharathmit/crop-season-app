@@ -19,6 +19,8 @@ Responsive web app for one farmer (Bharath) to track **crop-wise expenses and ca
 - Tailwind CSS v4 (via `@tailwindcss/vite`), mobile-first
 - React Router (`src/app/router.tsx`)
 - Supabase: Postgres, Auth (single user), Storage (bill photos), SQL views for reports
+  - Project: `crop-season-app`, ref `pwplyirgvgcnzugutirc`, region ap-southeast-1, URL https://pwplyirgvgcnzugutirc.supabase.co
+  - Apply new migrations with the Supabase MCP `apply_migration` (same file name), after `npm run test:db` passes
 - Hosting: GitHub Pages, auto-deployed by `.github/workflows/deploy.yml` on every push to `main`
 
 ## Commands

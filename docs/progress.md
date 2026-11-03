@@ -2,13 +2,14 @@
 
 Update at the end of every session: tick what is done, set the current step, add a dated line to the session log.
 
-**Current step:** Phase 0 — create Supabase project, run migrations 0001 + 0002, fill `.env.local` and GitHub secrets. Then Phase 2 (login + masters).
+**Current step:** Phase 2 — login (email, single user) + call seed_my_defaults() on first login; then masters.
 
 ## Phase 0 — Setup
 - [x] Requirements analysis and v1 scope agreed
 - [x] Project scaffold: React + TS + Vite + Tailwind + Router + Supabase client
 - [x] Claude Code memory: CLAUDE.md, docs/, slash commands
-- [ ] Create Supabase project; fill `.env.local`
+- [x] Supabase project `crop-season-app` (ref pwplyirgvgcnzugutirc, ap-southeast-1); migrations 0001 + 0002 applied; security advisor clean
+- [ ] Owner adds GitHub secrets VITE_SUPABASE_URL + VITE_SUPABASE_PUBLISHABLE_KEY
 - [x] Git repository initialised; first commit made locally
 - [x] Pushed to GitHub: https://github.com/bharathmit/crop-season-app
 - [x] GitHub Pages deploy workflow (.github/workflows/deploy.yml)
@@ -54,3 +55,4 @@ Update at the end of every session: tick what is done, set the current step, add
 - 2026-11-03 — Rule added: per-acre value shown beside every amount, live in entry forms.
 - 2026-11-03 — Data model v3: plots → farms; machinery added; crops/seasons/cycles/harvest merged into crops; expenses + incomes merged into transactions (scope crop/farm/machinery). Farm and machinery categories seeded.
 - 2026-11-03 — Data model v3 approved. Wrote 0001_init.sql (9 tables, triggers, RLS, 4 views, bills bucket) and 0002_seed_defaults.sql; local PGlite test passes (figures match owner's Excel). Feature folders renamed to farms / machinery / transactions.
+- 2026-11-03 — Created Supabase project crop-season-app (Singapore region); applied 0001_init + 0002_seed_defaults; 9 tables, 4 views, 9 RLS tables, bills bucket verified; advisor: no issues.
