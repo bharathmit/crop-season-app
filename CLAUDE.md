@@ -15,6 +15,16 @@ Responsive web app for one farmer (Bharath) to track **crop-wise expenses and ca
 - Work in small steps across sessions; leave the repo buildable at the end of each step.
 - Never commit secrets. Supabase keys live in `.env.local` (git-ignored).
 
+## Responsive UI (always — owner rule)
+Every screen must work on phone, tablet and desktop. Mobile-first Tailwind: base styles = phone, then `sm:` / `md:` / `lg:`.
+- **Breakpoints:** phone < 768 px · tablet `md` 768–1023 px · desktop `lg` ≥ 1024 px.
+- **Navigation:** bottom tab bar on phone; left icon sidebar from `md` up. "+" quick-add button reachable on every screen.
+- **Lists / tables:** stacked cards on phone; tables from `md` up. No page-level horizontal scroll (only chip rows may scroll sideways).
+- **Forms and detail views:** full-screen sheet on phone; modal or side panel from `md` up. One column on phone, two from `md`.
+- **Touch:** tap targets at least 44 × 44 px; inputs at least 16 px text (no iOS zoom); numeric fields use `inputmode="decimal"`.
+- **Charts and tiles:** fluid width; tiles 2 per row on phone, 3–4 on desktop.
+- **Done check:** before marking a UI step done, screenshot it with Playwright at **360 × 800, 768 × 1024 and 1280 × 800** and fix any overflow, cut-off text or overlap.
+
 ## Stack
 - React 19 + TypeScript + Vite
 - Tailwind CSS v4 (via `@tailwindcss/vite`), mobile-first

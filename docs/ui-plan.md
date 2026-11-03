@@ -2,6 +2,9 @@
 
 Layout and flows modelled on the owner's reference app (pannai.marutham.com, reviewed 2026-11-03). Use it for structure only: no copied branding, logo, names or assets. Our features (stages, per-acre, subsidy, qty × rate, checklist, farm + machinery money) are added on top.
 
+## Responsive rule
+All screens follow the **Responsive UI** rules in `CLAUDE.md` (mobile-first; checked at 360, 768 and 1280 px wide).
+
 ## Shell
 - **Desktop:** narrow left icon sidebar: Home, Crops, Farm, Machinery, Reports, Settings. Top bar: page title, search, user name.
 - **Mobile:** same items as a bottom tab bar.
