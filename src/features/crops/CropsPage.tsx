@@ -3,11 +3,10 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import Chips from '../../components/ui/Chips'
 import MoneyTiles from '../../components/MoneyTiles'
-import PeriodFilter from '../../components/PeriodFilter'
 import EmptyState, { PageHeader } from '../../components/ui/EmptyState'
-import { Button, ErrorText } from '../../components/ui/form'
+import { Button, ErrorText, Field, TextInput } from '../../components/ui/form'
 import { daysSince, formatAcres, formatDate, formatINR, netClass, todayISO } from '../../lib/format'
-import { usePeriod, type DateRange } from '../../lib/period'
+import type { DateRange } from '../../lib/period'
 import { supabase } from '../../lib/supabase'
 import { useRows } from '../../lib/useRows'
 import { useFarms } from '../farms/data'
@@ -39,17 +38,18 @@ export default function CropsPage() {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const [tab, setTab] = useState<'active' | 'closed'>('active')
-  const period = usePeriod('year')
+  // Closed tab only: optional From / To search (empty = all closed crops).
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
   const [editing, setEditing] = useState<CropWithStage | null>(null)
   const adding = params.get('new') === '1'
 
   const list = crops.data ?? []
   const farmById = (id: string) => farms.data?.find((f) => f.id === id)
 
-  // Active / Closed tabs, both narrowed by the date range.
-  const inPeriod = list.filter((c) => cropInRange(c, period.range))
-  const live = inPeriod.filter((c) => c.status !== 'closed')
-  const closed = inPeriod.filter((c) => c.status === 'closed')
+  // Active (all active crops) / Closed (narrowed by the From / To search).
+  const live = list.filter((c) => c.status !== 'closed')
+  const closed = list.filter((c) => c.status === 'closed' && cropInRange(c, { from: from || null, to: to || null }))
   const chips = [
     { key: 'active', label: 'Active', count: live.length },
     { key: 'closed', label: 'Closed', count: closed.length },
@@ -92,14 +92,10 @@ export default function CropsPage() {
 
   return (
     <>
-      <PageHeader subtitle="One crop = one crop on one farm in one season." />
-      {/* Date range next to Add crop: shows crops growing in that period */}
-      {!noFarm && (
-        <div className="mb-1 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <PeriodFilter period={period} />
-          <Button onClick={openNew} className="md:shrink-0"><Plus className="h-4 w-4" />Add crop</Button>
-        </div>
-      )}
+      <PageHeader
+        subtitle="One crop = one crop on one farm in one season."
+        action={!noFarm && <Button onClick={openNew}><Plus className="h-4 w-4" />Add crop</Button>}
+      />
       <ErrorText>{crops.error ?? farms.error}</ErrorText>
 
       {noFarm ? (
@@ -112,7 +108,16 @@ export default function CropsPage() {
         <>
           <div className="mb-4"><Chips label="Crop status" chips={chips} value={tab} onChange={(k) => setTab(k as 'active' | 'closed')} /></div>
 
-          {!shown.length && <p className="rounded-2xl bg-white p-6 text-center text-sm text-stone-500">{tab === 'active' ? 'No active crops in this period.' : 'No closed crops in this period.'}</p>}
+          {/* Closed crops: search by date range (sowing → harvest overlaps From / To) */}
+          {tab === 'closed' && (
+            <div className="mb-4 grid grid-cols-2 items-end gap-3 sm:max-w-lg sm:grid-cols-[1fr_1fr_auto]">
+              <Field label="From"><TextInput type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} /></Field>
+              <Field label="To"><TextInput type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} /></Field>
+              {(from || to) && <Button tone="secondary" className="col-span-2 sm:col-span-1" onClick={() => { setFrom(''); setTo('') }}>Clear</Button>}
+            </div>
+          )}
+
+          {!shown.length && <p className="rounded-2xl bg-white p-6 text-center text-sm text-stone-500">{tab === 'active' ? 'No active crops.' : from || to ? 'No closed crops in these dates.' : 'No closed crops.'}</p>}
 
           {/* Phone: cards */}
           <ul className="space-y-3 md:hidden">
