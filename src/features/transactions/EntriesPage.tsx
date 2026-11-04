@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Paperclip, Plus } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Layers, Paperclip, Plus } from 'lucide-react'
 import AmountWithPerAcre from '../../components/AmountWithPerAcre'
-import Chips from '../../components/ui/Chips'
 import PeriodFilter from '../../components/PeriodFilter'
 import EmptyState from '../../components/ui/EmptyState'
 import { Button, ErrorText, Select } from '../../components/ui/form'
@@ -13,17 +12,18 @@ import { supabase } from '../../lib/supabase'
 import { useRows } from '../../lib/useRows'
 import type { EntryType, Scope } from '../../types/domain'
 import TransactionForm, { type EntryStart } from './TransactionForm'
+import { isOthersStage } from '../crops/data'
 import { openBill, TX_SELECT, type TxRow } from './data'
 
-type Target = { name: string; acres: number; back: string; sub: string }
+type Target = { name: string; acres: number; back: string; sub: string; currentStageId?: string | null }
 
 function useTarget(scope: Scope, id: string) {
   return useRows<Target>(async () => {
     if (scope === 'crop') {
-      const r = await supabase.from('crops').select('crop_name, variety, season, season_year, area_acres').eq('id', id).single()
+      const r = await supabase.from('crops').select('crop_name, variety, season, season_year, area_acres, current_stage_id').eq('id', id).single()
       if (r.error) return { data: null, error: r.error }
       const c = r.data
-      return { data: { name: `${c.crop_name}${c.variety ? ` · ${c.variety}` : ''}`, acres: c.area_acres, back: `/crops/${id}`, sub: `${c.season} ${c.season_year} · ${formatAcres(c.area_acres)}` }, error: null }
+      return { data: { name: `${c.crop_name}${c.variety ? ` · ${c.variety}` : ''}`, acres: c.area_acres, back: `/crops/${id}`, sub: `${c.season} ${c.season_year} · ${formatAcres(c.area_acres)}`, currentStageId: c.current_stage_id }, error: null }
     }
     if (scope === 'farm') {
       const r = await supabase.from('farms').select('name, area_acres').eq('id', id).single()
@@ -49,7 +49,8 @@ export default function EntriesPage({ scope, embedded = false, onSaved }: { scop
     return q.order('start_date', { ascending: false }).order('created_at', { ascending: false }).returns<TxRow[]>()
   }, [scope, id])
 
-  const [type, setType] = useState<EntryType | 'all'>('expense')
+  // Crops open on All (stage panels split expense / income); farm / machine on Expenses.
+  const [type, setType] = useState<EntryType | 'all'>(scope === 'crop' ? 'all' : 'expense')
   const [group, setGroup] = useState('all')
   const [entry, setEntry] = useState<{ start: EntryStart; tx: TxRow | null } | null>(null)
 
@@ -66,7 +67,7 @@ export default function EntriesPage({ scope, embedded = false, onSaved }: { scop
     const keys: { key: string; order: number }[] = []
     for (const t of byType) {
       const k = groupOf(t)
-      if (!keys.some((x) => x.key === k)) keys.push({ key: k, order: scope === 'crop' ? (t.stage?.sort_order ?? 99) : 0 })
+      if (!keys.some((x) => x.key === k)) keys.push({ key: k, order: scope === 'crop' ? stageOrder(t) : 0 })
     }
     keys.sort((a, b) => a.order - b.order || a.key.localeCompare(b.key))
     return [
@@ -95,6 +96,7 @@ export default function EntriesPage({ scope, embedded = false, onSaved }: { scop
     locked: true,
   })
   const groupLabel = scope === 'crop' ? 'Stage' : 'Category'
+  const openEntry = (t: TxRow) => setEntry({ start: startFor(t.entry_type), tx: t })
 
   return (
     <>
@@ -132,7 +134,13 @@ export default function EntriesPage({ scope, embedded = false, onSaved }: { scop
         ))}
       </div>
       {isCrop ? (
-        <div className="mb-4"><Chips label={groupLabel} chips={chips} value={activeGroup} onChange={setGroup} /></div>
+        <label className="relative mb-4 block sm:max-w-sm">
+          <span className="sr-only">{groupLabel}</span>
+          <Layers aria-hidden className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-700" />
+          <Select value={activeGroup} onChange={(e) => setGroup(e.target.value)} className="pl-9">
+            {chips.map((c) => <option key={c.key} value={c.key}>{c.key === 'all' ? 'All stages' : c.label} · {c.count}</option>)}
+          </Select>
+        </label>
       ) : (
         <label className="mb-4 block sm:max-w-sm">
           <span className="sr-only">{groupLabel}</span>
@@ -146,6 +154,8 @@ export default function EntriesPage({ scope, embedded = false, onSaved }: { scop
         <p className="text-sm text-stone-500">Loading…</p>
       ) : !shown.length ? (
         <EmptyState title="No entries here" text="Use the Expense or Income button to add one." />
+      ) : isCrop ? (
+        <StagePanels rows={shown} acres={acres} currentStageId={target.data?.currentStageId ?? null} single={activeGroup !== 'all'} onOpen={openEntry} />
       ) : (
         <>
           {/* Phone: cards */}
@@ -222,5 +232,100 @@ export default function EntriesPage({ scope, embedded = false, onSaved }: { scop
         <TransactionForm start={entry.start} tx={entry.tx} onClose={() => setEntry(null)} onSaved={() => { txs.reload(); onSaved?.() }} />
       )}
     </>
+  )
+}
+
+// Stage order for crop entries; "Others" always last.
+const stageOrder = (t: TxRow) => (t.stage && isOthersStage(t.stage.name) ? 9999 : (t.stage?.sort_order ?? 999))
+const byDate = (a: TxRow, b: TxRow) => a.start_date.localeCompare(b.start_date) || a.created_at.localeCompare(b.created_at)
+
+// Crop entries: one collapsible panel per stage (stage order); inside, Expenses then Income, oldest date first.
+function StagePanels({ rows, acres, currentStageId, single, onOpen }: { rows: TxRow[]; acres: number; currentStageId: string | null; single: boolean; onOpen: (t: TxRow) => void }) {
+  const groups = useMemo(() => {
+    const map = new Map<string, { id: string | null; order: number; rows: TxRow[] }>()
+    for (const t of rows) {
+      const k = t.stage?.name ?? '—'
+      if (!map.has(k)) map.set(k, { id: t.crop_stage_id, order: stageOrder(t), rows: [] })
+      map.get(k)!.rows.push(t)
+    }
+    return [...map.entries()].sort((a, b) => a[1].order - b[1].order)
+  }, [rows])
+  // Open by default: the crop's current stage (or the only stage shown).
+  // `flipped` holds panels the owner opened / closed, relative to that default.
+  const [flipped, setFlipped] = useState<Set<string>>(() => new Set())
+  const toggle = (k: string) => setFlipped((p) => { const n = new Set(p); if (n.has(k)) n.delete(k); else n.add(k); return n })
+  const total = (r: TxRow[]) => r.reduce((a, t) => a + Number(t.net_amount), 0)
+
+  return (
+    <div className="space-y-3">
+      {groups.map(([name, g]) => {
+        const exp = g.rows.filter((t) => t.entry_type === 'expense').sort(byDate)
+        const inc = g.rows.filter((t) => t.entry_type === 'income').sort(byDate)
+        const current = g.id != null && g.id === currentStageId
+        const isOpen = single || current !== flipped.has(name)
+        return (
+          <section key={name} className={`overflow-hidden rounded-2xl border bg-white ${current ? 'border-green-300' : 'border-stone-200'}`}>
+            <button onClick={() => toggle(name)} aria-expanded={isOpen} className={`flex min-h-14 w-full items-center gap-2 px-4 py-2 text-left ${current ? 'bg-green-50' : 'bg-stone-50'}`}>
+              <ChevronDown aria-hidden className={`h-4 w-4 shrink-0 text-stone-500 transition-transform ${isOpen ? '' : '-rotate-90'}`} />
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-2">
+                  <span className="truncate font-semibold text-stone-900">{name}</span>
+                  {current && <span className="shrink-0 rounded-full bg-green-700 px-2 py-0.5 text-[11px] font-medium text-white">Current</span>}
+                </span>
+                <span className="block text-xs text-stone-500">{g.rows.length} {g.rows.length === 1 ? 'entry' : 'entries'}</span>
+              </span>
+              <span className="shrink-0 text-right text-sm">
+                {exp.length > 0 && <span className="block font-semibold text-red-700">{formatINR(total(exp))}</span>}
+                {inc.length > 0 && <span className="block font-semibold text-green-700">+{formatINR(total(inc))}</span>}
+              </span>
+            </button>
+            {isOpen && (
+              <div className="divide-y divide-stone-100 border-t border-stone-100">
+                {([['Expenses', exp, 'text-red-800 bg-red-50/60'], ['Income', inc, 'text-green-800 bg-green-50/60']] as const).map(([label, list, tone]) =>
+                  list.length ? (
+                    <div key={label}>
+                      <p className={`flex justify-between px-4 py-1.5 text-xs font-bold ${tone}`}>
+                        <span>{label} · {list.length}</span>
+                        <span>{formatINR(total(list))}{acres > 0 && <span className="font-medium text-stone-500"> · {formatINR(perAcre(total(list), acres))}/ac</span>}</span>
+                      </p>
+                      <ul className="divide-y divide-stone-100">
+                        {list.map((t) => <EntryRow key={t.id} t={t} acres={acres} onOpen={onOpen} />)}
+                      </ul>
+                    </div>
+                  ) : null,
+                )}
+              </div>
+            )}
+          </section>
+        )
+      })}
+    </div>
+  )
+}
+
+function EntryRow({ t, acres, onOpen }: { t: TxRow; acres: number; onOpen: (t: TxRow) => void }) {
+  const pa = perAcre(t.net_amount, acres)
+  const inc = t.entry_type === 'income'
+  return (
+    <li className="flex items-center">
+      <button onClick={() => onOpen(t)} className="flex min-h-14 min-w-0 flex-1 items-center gap-3 px-4 py-2 text-left hover:bg-stone-50">
+        <span className="w-20 shrink-0 text-xs text-stone-500 md:text-sm md:text-stone-700">{formatDate(t.start_date)}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium">{t.item?.name}</span>
+          <span className="block truncate text-xs text-stone-500">
+            {t.item?.category?.name ?? ''}
+            {t.quantity != null && t.rate != null && <> · {t.quantity} {t.unit ?? ''} × {formatINR(t.rate)}</>}
+            {t.party ? ` · ${t.party}` : ''}
+          </span>
+        </span>
+        <span className="shrink-0 text-right">
+          <span className={`block text-sm font-semibold ${inc ? 'text-green-700' : ''}`}>{inc ? '+' : ''}{formatINR(t.net_amount)}</span>
+          <span className="block text-xs text-stone-500">{pa == null ? '' : `${formatINR(pa)}/ac`}</span>
+        </span>
+      </button>
+      {t.bill_path && (
+        <button aria-label="Open bill" onClick={() => openBill(t.bill_path!)} className="mr-1 grid h-11 w-11 shrink-0 place-items-center rounded-full text-stone-500 hover:bg-stone-100"><Paperclip className="h-4 w-4" /></button>
+      )}
+    </li>
   )
 }

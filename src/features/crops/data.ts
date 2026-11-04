@@ -22,3 +22,6 @@ export function useCropStages(cropId: string | undefined) {
     [cropId],
   )
 }
+
+// "Others": a catch-all stage for entries not tied to a crop stage. Listed last, skipped when moving stages.
+export const isOthersStage = (name: string) => name.trim().toLowerCase() === 'others'

@@ -5,14 +5,15 @@ import AmountWithPerAcre from '../../components/AmountWithPerAcre'
 import Bars, { groupExpense } from '../../components/ExpenseBars'
 import { NetIcon, TILE } from '../../components/MoneyTiles'
 import Chips from '../../components/ui/Chips'
-import { Button, ErrorText } from '../../components/ui/form'
-import { capitalize, daysSince, formatAcres, formatDate } from '../../lib/format'
+import Sheet from '../../components/ui/Sheet'
+import { Button, ErrorText, Field, Select } from '../../components/ui/form'
+import { daysSince, formatAcres } from '../../lib/format'
 import { supabase } from '../../lib/supabase'
 import { useRows } from '../../lib/useRows'
 import type { Crop, Farm } from '../../types/domain'
 import StageEditor from '../stages/StageEditor'
 import { dbMessage } from '../farms/data'
-import { useCropStages } from './data'
+import { isOthersStage, useCropStages } from './data'
 import EntriesPage from '../transactions/EntriesPage'
 import { useCropTransactions } from '../transactions/data'
 import TaskItem from '../tasks/TaskItem'
@@ -80,10 +81,13 @@ function Summary({ crop, tasks, moneyKey, onChanged }: { crop: Crop; tasks: Task
   const age = daysSince(crop.sowing_date)
   const open = tasks.filter((t) => t.status === 'open').length
   const done = tasks.filter((t) => t.status === 'done').length
-  const active = (stages.data ?? []).filter((s) => s.is_active)
-  const idx = active.findIndex((s) => s.id === crop.current_stage_id)
-  const current = active[idx]
-  const next = active[idx + 1]
+  // Stage steps: active stages without "Others" (entries only).
+  const steps = (stages.data ?? []).filter((s) => s.is_active && !isOthersStage(s.name))
+  const idx = steps.findIndex((s) => s.id === crop.current_stage_id)
+  const current = (stages.data ?? []).find((s) => s.id === crop.current_stage_id)
+  const next = steps[idx + 1]
+  const [moving, setMoving] = useState(false)
+  const [pick, setPick] = useState('')
   const acres = crop.area_acres
 
   async function setStage(id: string) {
@@ -91,8 +95,12 @@ function Summary({ crop, tasks, moneyKey, onChanged }: { crop: Crop; tasks: Task
     setBusy(true)
     const { error } = await supabase.from('crops').update({ current_stage_id: id }).eq('id', crop.id)
     setBusy(false)
-    if (error) setError(dbMessage(error.message))
-    else onChanged()
+    if (error) {
+      setError(dbMessage(error.message))
+      return false
+    }
+    onChanged()
+    return true
   }
 
   const exp = useMemo(() => (txs.data ?? []).filter((t) => t.entry_type === 'expense'), [txs.data])
@@ -105,28 +113,42 @@ function Summary({ crop, tasks, moneyKey, onChanged }: { crop: Crop; tasks: Task
 
   return (
     <div className="space-y-4">
-      {/* Crop details (key fields) + current stage on one line: move to next stage, edit stages */}
+      {/* Crop details (key fields) + current stage. Changing stage opens a confirm sheet so a stray tap while scrolling changes nothing. */}
       <section className="rounded-2xl border border-green-100 bg-green-50/60 p-4">
-        <p className="text-sm text-stone-700">
-          {crop.season} {crop.season_year} · {formatAcres(acres)} · {age == null ? 'not sown' : `${age} days`} · <span className="whitespace-nowrap">Sown {formatDate(crop.sowing_date)}</span>
-          <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs font-medium text-stone-600">{capitalize(crop.status)}</span>
-        </p>
+        <p className="text-sm text-stone-700">{crop.season} {crop.season_year} · {formatAcres(acres)} · {age == null ? 'not sown' : `${age} days`}</p>
         <div className="mt-3 flex items-center gap-2">
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold text-green-900">Current stage{idx >= 0 && <span className="ml-1 font-medium text-stone-500">{idx + 1}/{active.length}</span>}</p>
+            <p className="text-xs font-bold text-green-900">Current stage{idx >= 0 && <span className="ml-1 font-medium text-stone-500">{idx + 1}/{steps.length}</span>}</p>
             <p className="truncate font-semibold text-green-800">{current?.name ?? '—'}</p>
           </div>
-          {next && (
-            <Button onClick={() => setStage(next.id)} disabled={busy} className="shrink-0 px-3">
-              <span><span className="hidden sm:inline">Move to </span>{next.name}</span><ArrowRight className="h-4 w-4" />
-            </Button>
-          )}
+          <button onClick={() => { setPick(next?.id ?? current?.id ?? ''); setMoving(true) }} className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-lg border border-green-700 bg-white px-3 text-sm font-medium text-green-800 hover:bg-green-100">
+            <ArrowRight className="h-4 w-4" />Change stage
+          </button>
           <button onClick={() => setEditStages(true)} aria-label="Edit stages" title="Edit stages" className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-lg border border-green-200 bg-white px-2 text-sm font-medium text-green-800 hover:bg-green-100">
             <Settings2 className="h-4 w-4" /><span className="hidden sm:inline">Edit stages</span>
           </button>
         </div>
-        <ErrorText>{error}</ErrorText>
       </section>
+
+      {moving && (
+        <Sheet open title="Change stage" onClose={() => setMoving(false)}
+          footer={
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button tone="secondary" onClick={() => setMoving(false)}>Cancel</Button>
+              <Button disabled={busy || !pick || pick === crop.current_stage_id} onClick={async () => { if (await setStage(pick)) setMoving(false) }}>
+                {busy ? 'Saving…' : `Move to ${steps.find((s) => s.id === pick)?.name ?? '…'}`}
+              </Button>
+            </div>
+          }>
+          <p className="mb-3 text-sm text-stone-600">Now: <strong className="text-green-800">{current?.name ?? '—'}</strong></p>
+          <Field label="Move to">
+            <Select value={pick} onChange={(e) => setPick(e.target.value)}>
+              {steps.map((s) => <option key={s.id} value={s.id}>{s.name}{s.id === crop.current_stage_id ? ' (now)' : s.id === next?.id ? ' (next)' : ''}</option>)}
+            </Select>
+          </Field>
+          <ErrorText>{error}</ErrorText>
+        </Sheet>
+      )}
 
       {/* Money tiles: 2 per row on phone, 5 on desktop */}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">

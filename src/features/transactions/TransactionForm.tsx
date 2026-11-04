@@ -9,7 +9,7 @@ import { useAuth } from '../../app/auth'
 import { UNITS, type CropStage, type EntryType, type Scope, type Transaction } from '../../types/domain'
 import { dbMessage } from '../farms/data'
 import { useEntryLookups } from './data'
-import { useCropStages } from '../crops/data'
+import { isOthersStage, useCropStages } from '../crops/data'
 
 export type EntryStart = {
   entryType: EntryType
@@ -22,6 +22,7 @@ export type EntryStart = {
 }
 
 const NEW_ITEM = '__new__'
+const OTHERS = '__others__'
 
 function Segmented<T extends string>({ value, options, onChange, label }: { value: T; options: { key: T; label: string }[]; onChange: (v: T) => void; label: string }) {
   return (
@@ -79,6 +80,9 @@ export default function TransactionForm({ start, tx, onClose, onSaved }: { start
 
   const stages = useCropStages(scope === 'crop' ? cropId : undefined)
   const activeStages: CropStage[] = (stages.data ?? []).filter((s) => s.is_active || s.id === stageId)
+  // "Others" (not tied to a stage) is listed last; created on the crop the first time it is used.
+  const othersStage = activeStages.find((s) => isOthersStage(s.name))
+  const orderedStages = [...activeStages.filter((s) => !isOthersStage(s.name)), ...(othersStage ? [othersStage] : [])]
 
   // Defaults once lookups arrive: first crop / farm / machine.
   useEffect(() => {
@@ -122,7 +126,7 @@ export default function TransactionForm({ start, tx, onClose, onSaved }: { start
   // Stage: keep current if valid, else the crop's current stage.
   useEffect(() => {
     if (scope !== 'crop' || !stages.data) return
-    if (!stages.data.some((s) => s.id === stageId)) setStageId(crop?.current_stage_id ?? stages.data[0]?.id ?? '')
+    if (stageId !== OTHERS && !stages.data.some((s) => s.id === stageId)) setStageId(crop?.current_stage_id ?? stages.data[0]?.id ?? '')
   }, [stages.data]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function pickItem(id: string) {
@@ -130,11 +134,7 @@ export default function TransactionForm({ start, tx, onClose, onSaved }: { start
     const item = L?.items.find((i) => i.id === id)
     if (!item) return
     if (item.default_unit && !f.unit) setF((p) => ({ ...p, unit: item.default_unit!.toLowerCase() }))
-    // Pre-fill the item's usual stage when this crop has it (owner can change it).
-    if (scope === 'crop' && item.default_stage_name && !tx) {
-      const s = activeStages.find((x) => x.name.toLowerCase() === item.default_stage_name!.toLowerCase())
-      if (s) setStageId(s.id)
-    }
+    // Stage stays on the crop's current stage (owner 2026-11-04); the owner changes it if needed.
   }
 
   const qty = toNumberOrNull(f.quantity)
@@ -175,6 +175,19 @@ export default function TransactionForm({ start, tx, onClose, onSaved }: { start
       finalItemId = r.data.id
     }
 
+    let finalStageId = stageId
+    if (scope === 'crop' && stageId === OTHERS) {
+      const sort = Math.max(0, ...(stages.data ?? []).map((x) => x.sort_order)) + 1
+      const r = await supabase.from('crop_stages').insert({ crop_id: cropId, name: 'Others', sort_order: sort }).select('id').single()
+      if (r.error) {
+        setBusy(false)
+        return setError(dbMessage(r.error.message))
+      }
+      finalStageId = r.data.id
+      setStageId(finalStageId)
+      stages.reload()
+    }
+
     let bill_path = tx?.bill_path ?? null
     if (file) {
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
@@ -192,7 +205,7 @@ export default function TransactionForm({ start, tx, onClose, onSaved }: { start
       scope,
       farm_id: farm?.id ?? farmId,
       crop_id: scope === 'crop' ? cropId : null,
-      crop_stage_id: scope === 'crop' ? stageId : null,
+      crop_stage_id: scope === 'crop' ? finalStageId : null,
       machinery_id: scope === 'machinery' ? machineId : null,
       item_id: finalItemId,
       start_date: f.start_date,
@@ -292,41 +305,21 @@ export default function TransactionForm({ start, tx, onClose, onSaved }: { start
                 <Field label="Date *"><TextInput type="date" value={f.start_date} onChange={set('start_date')} /></Field>
               </FormGrid>
 
-              {scope === 'crop' && (
-                <div>
-                  <p className="mb-2 text-sm font-medium text-stone-700">Stage *</p>
-                  <div className="flex flex-wrap gap-2">
-                    {activeStages.map((s) => (
-                      <button
-                        key={s.id}
-                        type="button"
-                        aria-pressed={s.id === stageId}
-                        onClick={() => setStageId(s.id)}
-                        className={`min-h-11 rounded-full border px-4 text-sm font-medium ${s.id === stageId ? 'border-green-700 bg-green-700 text-white' : 'border-stone-200 bg-white text-stone-700'}`}
-                      >
-                        {s.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <p className="mb-2 text-sm font-medium text-stone-700">Category</p>
-                <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:px-0">
-                  {categories.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      aria-pressed={c.id === categoryId}
-                      onClick={() => { setCategoryId(c.id); setItemId('') }}
-                      className={`min-h-11 shrink-0 rounded-full border px-4 text-sm ${c.id === categoryId ? 'border-green-700 bg-green-50 font-medium text-green-800' : 'border-stone-200 bg-white text-stone-700'}`}
-                    >
-                      {c.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <FormGrid>
+                {scope === 'crop' && (
+                  <Field label="Stage *" hint={crop?.current_stage_id === stageId ? 'Current stage of the crop' : undefined}>
+                    <Select value={stageId} onChange={(e) => setStageId(e.target.value)}>
+                      {orderedStages.map((s) => <option key={s.id} value={s.id}>{s.name}{s.id === crop?.current_stage_id ? ' (current)' : ''}</option>)}
+                      {!othersStage && <option value={OTHERS}>Others</option>}
+                    </Select>
+                  </Field>
+                )}
+                <Field label="Category">
+                  <Select value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setItemId('') }}>
+                    {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </Select>
+                </Field>
+              </FormGrid>
 
               <FormGrid>
                 <Field label="Item *" className={itemId === NEW_ITEM ? '' : 'md:col-span-2'}>
