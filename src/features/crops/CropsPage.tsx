@@ -38,9 +38,12 @@ export default function CropsPage() {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const [tab, setTab] = useState<'active' | 'closed'>('active')
-  // Closed tab only: optional From / To search (empty = all closed crops).
-  const [from, setFrom] = useState('')
-  const [to, setTo] = useState('')
+  // Closed tab only: From / To search (cleared = all closed crops).
+  // Default: the last one year (same date last year → today).
+  const today = todayISO()
+  const yearAgo = `${Number(today.slice(0, 4)) - 1}${today.slice(4)}`
+  const [from, setFrom] = useState(yearAgo)
+  const [to, setTo] = useState(today)
   const [editing, setEditing] = useState<CropWithStage | null>(null)
   const adding = params.get('new') === '1'
 

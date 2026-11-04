@@ -17,13 +17,13 @@ export const NetIcon = ({ net, className = '' }: { net: number; className?: stri
 
 // Expense / Income / Net profit as three small tiles. `suffix` labels the period, e.g. "(2026)".
 // `acres` adds a per-acre line (crops only). `netHref` makes the Net tile a link.
-// `center` centres the amounts with more space under the label (Home).
-export default function MoneyTiles({ expense, income, suffix = '', acres, netHref, center = false }: { expense: number; income: number; suffix?: string; acres?: number; netHref?: string; center?: boolean }) {
+// `spaced` adds more space between the label and the amount (Home).
+export default function MoneyTiles({ expense, income, suffix = '', acres, netHref, spaced = false }: { expense: number; income: number; suffix?: string; acres?: number; netHref?: string; spaced?: boolean }) {
   const net = income - expense
   const pa = (v: number) => {
     if (acres == null) return null
     const x = perAcre(v, acres)
-    return x == null ? null : <span className={`block text-[11px] text-stone-500 ${center ? 'text-center' : ''}`}>{formatINR(x)}/ac</span>
+    return x == null ? null : <span className="block text-[11px] text-stone-500">{formatINR(x)}/ac</span>
   }
   const head = (icon: ReactNode, t: string) => (
     <span className="flex items-start gap-1 text-[11px] leading-tight text-stone-600">
@@ -31,7 +31,7 @@ export default function MoneyTiles({ expense, income, suffix = '', acres, netHre
       <span>{t}{suffix ? <> <span className="whitespace-nowrap">{suffix}</span></> : null}</span>
     </span>
   )
-  const amt = center ? 'mt-1.5 text-center' : 'mt-0.5'
+  const amt = spaced ? 'mt-1.5' : 'mt-0.5'
   const box = 'block min-w-0 rounded-xl border px-2 py-2 sm:px-2.5'
   const E = TILE.expense
   const I = TILE.income

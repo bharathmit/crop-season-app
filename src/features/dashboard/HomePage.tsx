@@ -149,22 +149,22 @@ export default function HomePage() {
         {/* Owner's colours: blue net profit (red / green amount), green income, red expense */}
         <div className={`${tile} col-span-2 lg:col-span-1 ${TILE.net.box}`}>
           <NetIcon net={income - expense} className="mt-0.5 h-5 w-5 shrink-0" />
-          <div className="min-w-0 flex-1"><p className="text-xs font-bold text-stone-800">Net profit<span className="block text-[11px] font-semibold text-stone-600">(crop + farm + machinery)</span></p><p className={`mt-2 text-center text-xl font-semibold ${netClass(income - expense)}`}>{formatINR(income - expense)}</p></div>
+          <div className="min-w-0 flex-1"><p className="text-xs font-bold text-stone-800">Net profit<span className="block text-[11px] font-semibold text-stone-600">(crop + farm + machinery)</span></p><p className={`mt-2 text-xl font-semibold ${netClass(income - expense)}`}>{formatINR(income - expense)}</p></div>
         </div>
         <div className={`${tile} ${TILE.expense.box}`}>
           <Receipt aria-hidden className={`mt-0.5 h-5 w-5 shrink-0 ${TILE.expense.icon}`} />
-          <div className="min-w-0 flex-1"><p className="text-xs font-bold text-stone-800">Expense</p><p className="mt-2 truncate text-center text-base font-semibold text-stone-900">{formatINR(expense)}</p></div>
+          <div className="min-w-0 flex-1"><p className="text-xs font-bold text-stone-800">Expense</p><p className="mt-2 truncate text-base font-semibold text-stone-900">{formatINR(expense)}</p></div>
         </div>
         <div className={`${tile} ${TILE.income.box}`}>
           <Wallet aria-hidden className={`mt-0.5 h-5 w-5 shrink-0 ${TILE.income.icon}`} />
-          <div className="min-w-0 flex-1"><p className="text-xs font-bold text-stone-800">Income</p><p className="mt-2 truncate text-center text-base font-semibold text-stone-900">{formatINR(income)}</p></div>
+          <div className="min-w-0 flex-1"><p className="text-xs font-bold text-stone-800">Income</p><p className="mt-2 truncate text-base font-semibold text-stone-900">{formatINR(income)}</p></div>
         </div>
         <Link to="/tasks" className={`${tile} col-span-2 border-amber-100 bg-amber-50 lg:col-span-1`}>
           <ListTodo aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-bold text-stone-800">Open tasks</p>
-            <p className="mt-2 text-center text-xl font-semibold">{farmTasks.length}</p>
-            <p className="mt-1 text-center text-xs font-bold text-stone-600"><span className={overdue.length ? 'text-red-700' : ''}>{overdue.length} overdue</span> · <span className="text-blue-700">{dueSoon.length} due soon</span></p>
+            <p className="mt-2 text-xl font-semibold">{farmTasks.length}</p>
+            <p className="mt-1 text-xs font-bold text-stone-600"><span className={overdue.length ? 'text-red-700' : ''}>{overdue.length} overdue</span> · <span className="text-blue-700">{dueSoon.length} due soon</span></p>
           </div>
         </Link>
       </div>
@@ -179,7 +179,7 @@ export default function HomePage() {
         ] as const).map(([label, s, Icon, box, icon, to]) => (
           <Link key={s} to={to} className={`min-w-0 rounded-xl border px-2 py-2 sm:px-3 ${box}`}>
             <span className="flex items-start gap-1 text-xs font-bold leading-tight text-stone-800"><Icon aria-hidden className={`h-4 w-4 shrink-0 ${icon}`} /><span>{label} net</span></span>
-            <span className={`mt-2 block truncate text-center text-sm font-semibold ${netClass(netOf(s))}`}>{formatINR(netOf(s))}</span>
+            <span className={`mt-2 block truncate text-sm font-semibold ${netClass(netOf(s))}`}>{formatINR(netOf(s))}</span>
           </Link>
         ))}
       </div>
@@ -207,7 +207,7 @@ export default function HomePage() {
                         <span className="shrink-0 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">{stageOf(c.crop_id) ?? '—'}</span>
                       </div>
                       <p className="-mt-1 mb-2 text-xs text-stone-500">{c.season} {c.season_year} · {formatAcres(c.area_acres)}</p>
-                      <MoneyTiles expense={Number(c.expense)} income={Number(c.revenue)} acres={Number(c.area_acres)} netHref={`/crops/${c.crop_id}`} center />
+                      <MoneyTiles expense={Number(c.expense)} income={Number(c.revenue)} acres={Number(c.area_acres)} netHref={`/crops/${c.crop_id}`} spaced />
                     </div>
                   </li>
                 )

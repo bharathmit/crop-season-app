@@ -61,18 +61,19 @@ export default function CropPage({ crop, farm, onEdit, onChanged }: { crop: Crop
         ))}
       </div>
 
-      {tab === 'summary' && <Summary crop={crop} farm={farm} tasks={tasks.data ?? []} moneyKey={moneyKey} onChanged={onChanged} />}
+      {tab === 'summary' && <Summary crop={crop} tasks={tasks.data ?? []} moneyKey={moneyKey} onChanged={onChanged} />}
       {tab === 'entries' && <EntriesPage scope="crop" embedded onSaved={() => setMoneyKey((k) => k + 1)} />}
       {tab === 'tasks' && <CropTasks crop={crop} tasks={tasks.data ?? []} loading={tasks.loading} onChanged={() => setTaskKey((k) => k + 1)} />}
     </>
   )
 }
 
-function Summary({ crop, farm, tasks, moneyKey, onChanged }: { crop: Crop; farm: Farm | undefined; tasks: TaskRow[]; moneyKey: number; onChanged: () => void }) {
+function Summary({ crop, tasks, moneyKey, onChanged }: { crop: Crop; tasks: TaskRow[]; moneyKey: number; onChanged: () => void }) {
   const stages = useCropStages(crop.id)
   const profit = useRows<Profit>(() => supabase.from('v_crop_profit').select('revenue, expense, profit').eq('crop_id', crop.id).maybeSingle(), [crop.id, moneyKey])
   const txs = useCropTransactions(crop.id)
   const [editStages, setEditStages] = useState(false)
+  const [split, setSplit] = useState<'stage' | 'category'>('stage')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -95,8 +96,8 @@ function Summary({ crop, farm, tasks, moneyKey, onChanged }: { crop: Crop; farm:
   }
 
   const exp = useMemo(() => (txs.data ?? []).filter((t) => t.entry_type === 'expense'), [txs.data])
-  const byStage = groupExpense(exp, (t) => Number(t.net_amount), (t) => t.stage?.name ?? '—', (t) => t.stage?.sort_order ?? 99, acres)
-  const byCategory = groupExpense(exp, (t) => Number(t.net_amount), (t) => t.item?.category?.name ?? '—', undefined, acres)
+  const byStage = groupExpense(exp, (t) => Number(t.net_amount), (t) => t.stage?.name ?? '—', (t) => t.stage?.sort_order ?? 99)
+  const byCategory = groupExpense(exp, (t) => Number(t.net_amount), (t) => t.item?.category?.name ?? '—')
 
   const tile = 'flex items-start gap-3 rounded-2xl border p-3 sm:p-4'
   const label = 'text-xs font-bold text-stone-800'
@@ -104,81 +105,65 @@ function Summary({ crop, farm, tasks, moneyKey, onChanged }: { crop: Crop; farm:
 
   return (
     <div className="space-y-4">
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-2xl border border-stone-200 bg-white p-4 text-sm md:grid-cols-3 lg:grid-cols-6">
-        <div><dt className="text-xs text-stone-500">Season</dt><dd className="font-medium">{crop.season} {crop.season_year}</dd></div>
-        <div><dt className="text-xs text-stone-500">Farm</dt><dd className="truncate font-medium">{farm?.name ?? '—'}</dd></div>
-        <div><dt className="text-xs text-stone-500">Area</dt><dd className="font-medium">{formatAcres(acres)}</dd></div>
-        <div><dt className="text-xs text-stone-500">Crop age</dt><dd className="font-medium">{age == null ? '—' : `${age} days`}</dd></div>
-        <div><dt className="text-xs text-stone-500">Sowing date</dt><dd className="font-medium">{formatDate(crop.sowing_date)}</dd></div>
-        <div><dt className="text-xs text-stone-500">Status</dt><dd className="font-medium">{capitalize(crop.status)}</dd></div>
-      </dl>
-
-      {/* Current stage: move to next, jump to any stage, edit the stage list */}
+      {/* Crop details (key fields) + current stage on one line: move to next stage, edit stages */}
       <section className="rounded-2xl border border-green-100 bg-green-50/60 p-4">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="text-sm font-bold text-green-900">Current stage</h3>
-            <p className="text-lg font-semibold text-green-800">{current?.name ?? '—'}{active.length > 0 && idx >= 0 && <span className="ml-2 text-xs font-medium text-stone-500">{idx + 1} of {active.length}</span>}</p>
+        <p className="text-sm text-stone-700">
+          {crop.season} {crop.season_year} · {formatAcres(acres)} · {age == null ? 'not sown' : `${age} days`} · <span className="whitespace-nowrap">Sown {formatDate(crop.sowing_date)}</span>
+          <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs font-medium text-stone-600">{capitalize(crop.status)}</span>
+        </p>
+        <div className="mt-3 flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-bold text-green-900">Current stage{idx >= 0 && <span className="ml-1 font-medium text-stone-500">{idx + 1}/{active.length}</span>}</p>
+            <p className="truncate font-semibold text-green-800">{current?.name ?? '—'}</p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {next && (
-              <Button onClick={() => setStage(next.id)} disabled={busy}>Move to {next.name}<ArrowRight className="h-4 w-4" /></Button>
-            )}
-            <button onClick={() => setEditStages(true)} className="inline-flex min-h-11 items-center gap-1 rounded-lg px-3 text-sm font-medium text-green-800 hover:bg-green-100">
-              <Settings2 className="h-4 w-4" />Edit stages
-            </button>
-          </div>
+          {next && (
+            <Button onClick={() => setStage(next.id)} disabled={busy} className="shrink-0 px-3">
+              <span><span className="hidden sm:inline">Move to </span>{next.name}</span><ArrowRight className="h-4 w-4" />
+            </Button>
+          )}
+          <button onClick={() => setEditStages(true)} aria-label="Edit stages" title="Edit stages" className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-lg border border-green-200 bg-white px-2 text-sm font-medium text-green-800 hover:bg-green-100">
+            <Settings2 className="h-4 w-4" /><span className="hidden sm:inline">Edit stages</span>
+          </button>
         </div>
         <ErrorText>{error}</ErrorText>
-        <p className="mb-2 text-xs text-stone-600">Or tap a stage to move there:</p>
-        <div className="flex flex-wrap gap-2">
-          {active.map((s) => {
-            const on = s.id === crop.current_stage_id
-            return (
-              <button key={s.id} onClick={() => !on && setStage(s.id)} disabled={busy} aria-pressed={on}
-                className={`min-h-11 rounded-full border px-4 text-sm font-medium ${on ? 'border-green-700 bg-green-700 text-white' : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300'}`}>
-                {s.name}
-              </button>
-            )
-          })}
-        </div>
       </section>
 
       {/* Money tiles: 2 per row on phone, 5 on desktop */}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
         <div className={`${tile} ${TILE.expense.box}`}>
           <Receipt aria-hidden className={`mt-0.5 h-5 w-5 shrink-0 ${TILE.expense.icon}`} />
-          <div className="min-w-0 flex-1"><p className={label}>Expense</p><AmountWithPerAcre amount={profit.data?.expense} acres={acres} className="mt-2 w-full items-center text-center" /></div>
+          <div className="min-w-0 flex-1"><p className={label}>Expense</p><AmountWithPerAcre amount={profit.data?.expense} acres={acres} className="mt-2" /></div>
         </div>
         <div className={`${tile} ${TILE.income.box}`}>
           <Wallet aria-hidden className={`mt-0.5 h-5 w-5 shrink-0 ${TILE.income.icon}`} />
-          <div className="min-w-0 flex-1"><p className={label}>Income</p><AmountWithPerAcre amount={profit.data?.revenue} acres={acres} className="mt-2 w-full items-center text-center" /></div>
+          <div className="min-w-0 flex-1"><p className={label}>Income</p><AmountWithPerAcre amount={profit.data?.revenue} acres={acres} className="mt-2" /></div>
         </div>
         <Link to="?tab=tasks" replace className={`${tile} border-amber-100 bg-amber-50 hover:border-amber-300`}>
           <ListChecks aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
-          <div className="min-w-0 flex-1"><p className={label}>Tasks</p><p className="mt-2 whitespace-nowrap text-center text-[13px] sm:text-sm"><strong>{open}</strong> open · <strong>{done}</strong> done</p></div>
+          <div className="min-w-0 flex-1"><p className={label}>Tasks</p><p className="mt-2 whitespace-nowrap text-[13px] sm:text-sm"><strong>{open}</strong> open · <strong>{done}</strong> done</p></div>
         </Link>
         <div className={`${tile} border-violet-100 bg-violet-50`}>
           <Wheat aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-violet-700" />
-          <div className="min-w-0 flex-1"><p className={label}>Net yield</p><p className="mt-2 text-center text-base font-semibold">{crop.net_yield_qtl == null ? '—' : `${crop.net_yield_qtl} qtl`}</p></div>
+          <div className="min-w-0 flex-1"><p className={label}>Net yield</p><p className="mt-2 text-base font-semibold">{crop.net_yield_qtl == null ? '—' : `${crop.net_yield_qtl} qtl`}</p></div>
         </div>
         <div className={`${tile} col-span-2 md:col-span-1 ${TILE.net.box}`}>
           <NetIcon net={cash} className="mt-0.5 h-5 w-5 shrink-0" />
-          <div className="min-w-0 flex-1"><p className={label}>Cash profit</p><AmountWithPerAcre amount={profit.data?.profit} acres={acres} className={`mt-2 w-full items-center text-center ${cash < 0 ? 'text-red-700' : 'text-green-700'}`} /></div>
+          <div className="min-w-0 flex-1"><p className={label}>Cash profit</p><AmountWithPerAcre amount={profit.data?.profit} acres={acres} className={`mt-2 ${cash < 0 ? 'text-red-700' : 'text-green-700'}`} /></div>
         </div>
       </section>
 
-      {/* Expense by stage & by category (same look as Home) */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <section className="rounded-2xl border border-teal-100 bg-teal-50/60 p-4">
-          <h3 className="mb-3 text-sm font-bold text-teal-900">Expense by stage</h3>
-          <Bars rows={byStage} empty="No expenses yet." />
-        </section>
-        <section className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
-          <h3 className="mb-3 text-sm font-bold text-indigo-900">Expense by category</h3>
-          <Bars rows={byCategory} empty="No expenses yet." />
-        </section>
-      </div>
+      {/* Expense by stage / category: same card as Home (toggle, amount and %) */}
+      <section className="rounded-2xl border border-teal-100 bg-teal-50/60 p-4">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div className="min-w-0"><h3 className="text-sm font-bold text-teal-900">Expense by {split}</h3><p className="truncate text-xs font-semibold text-teal-700">{crop.crop_name}{crop.variety ? ` · ${crop.variety}` : ''}</p></div>
+          <div role="radiogroup" aria-label="Split by" className="flex gap-1 rounded-lg border border-teal-200 bg-white p-1">
+            {(['stage', 'category'] as const).map((k) => (
+              <button key={k} role="radio" aria-checked={split === k} onClick={() => setSplit(k)} className={`min-h-9 rounded-md px-3 text-xs font-semibold ${split === k ? 'bg-teal-700 text-white shadow-sm' : 'text-teal-800 hover:bg-teal-50'}`}>{k === 'stage' ? 'Stage' : 'Category'}</button>
+            ))}
+          </div>
+        </div>
+        <Bars rows={split === 'stage' ? byStage : byCategory} empty="No expenses yet." />
+      </section>
 
       {editStages && stages.data && (
         <StageEditor

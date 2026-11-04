@@ -5,6 +5,7 @@ import { capitalize, formatAcres } from '../../lib/format'
 import { supabase } from '../../lib/supabase'
 import { CROP_STATUSES, SEASONS, type Crop, type Farm } from '../../types/domain'
 import { dbMessage } from '../farms/data'
+import { useCropStages } from './data'
 
 export default function CropForm({
   crop,
@@ -36,7 +37,11 @@ export default function CropForm({
     harvest_date: crop?.harvest_date ?? '',
     gross_yield_qtl: crop?.gross_yield_qtl?.toString() ?? '',
     moisture_loss_pct: (crop?.moisture_loss_pct ?? 5).toString(),
+    current_stage_id: crop?.current_stage_id ?? '',
   })
+  // Edit only: current stage picker (active stages, plus the saved one).
+  const stages = useCropStages(crop?.id)
+  const stageOptions = (stages.data ?? []).filter((s) => s.is_active || s.id === crop?.current_stage_id)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   type K = keyof typeof f
@@ -70,6 +75,7 @@ export default function CropForm({
       harvest_date: toTextOrNull(f.harvest_date),
       gross_yield_qtl: gross,
       moisture_loss_pct: moisture,
+      ...(crop && f.current_stage_id ? { current_stage_id: f.current_stage_id } : {}),
     }
     const res = crop
       ? await supabase.from('crops').update(row).eq('id', crop.id).select('id').single()
@@ -134,6 +140,14 @@ export default function CropForm({
               {CROP_STATUSES.map((s) => <option key={s} value={s}>{capitalize(s)}</option>)}
             </Select>
           </Field>
+          {crop && (
+            <Field label="Current stage">
+              <Select value={f.current_stage_id} onChange={set('current_stage_id')}>
+                {!f.current_stage_id && <option value="">—</option>}
+                {stageOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </Select>
+            </Field>
+          )}
         </FormGrid>
 
         {crop && (
