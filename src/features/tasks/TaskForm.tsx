@@ -3,12 +3,15 @@ import Sheet from '../../components/ui/Sheet'
 import { Button, ErrorText, Field, FormGrid, Select, TextInput, toTextOrNull } from '../../components/ui/form'
 import { supabase } from '../../lib/supabase'
 import type { Scope } from '../../types/domain'
-import { useCropStages } from '../crops/data'
+import { isOthersStage, useCropStages } from '../crops/data'
 import { dbMessage } from '../farms/data'
 import { useEntryLookups } from '../transactions/data'
 import type { TaskRow } from './data'
 
-export type TaskStart = { scope?: Scope; cropId?: string; stageId?: string; farmId?: string; machineId?: string }
+const OTHERS = '__others__'
+
+// `lockCrop` (opened from a crop page): no Crop / Farm / Machine tabs and the crop is fixed; `cropLabel` names it.
+export type TaskStart = { scope?: Scope; cropId?: string; stageId?: string; farmId?: string; machineId?: string; lockCrop?: boolean; cropLabel?: string }
 
 // Add or edit a task on a crop stage, a farm or a machine.
 export default function TaskForm({ task, start = {}, onClose, onSaved }: { task?: TaskRow | null; start?: TaskStart; onClose: () => void; onSaved: () => void }) {
@@ -26,6 +29,12 @@ export default function TaskForm({ task, start = {}, onClose, onSaved }: { task?
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const stages = useCropStages(scope === 'crop' ? cropId : undefined)
+  const locked = !!start.lockCrop && scope === 'crop'
+  // Stage list: active stages, "Others" last (created on the crop the first time it is used).
+  const stageList = (stages.data ?? []).filter((s) => s.is_active || s.id === stageId)
+  const othersStage = stageList.find((s) => isOthersStage(s.name))
+  const orderedStages = [...stageList.filter((s) => !isOthersStage(s.name)), ...(othersStage ? [othersStage] : [])]
+  const currentStageId = L?.crops.find((c) => c.id === cropId)?.current_stage_id ?? start.stageId
 
   useEffect(() => {
     if (!L) return
@@ -36,9 +45,9 @@ export default function TaskForm({ task, start = {}, onClose, onSaved }: { task?
 
   useEffect(() => {
     if (scope !== 'crop' || !stages.data) return
-    if (!stages.data.some((s) => s.id === stageId)) {
+    if (stageId !== OTHERS && !stages.data.some((s) => s.id === stageId)) {
       const crop = L?.crops.find((c) => c.id === cropId)
-      setStageId(crop?.current_stage_id ?? stages.data[0]?.id ?? '')
+      setStageId(crop?.current_stage_id ?? start.stageId ?? stages.data[0]?.id ?? '')
     }
   }, [stages.data]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -50,18 +59,30 @@ export default function TaskForm({ task, start = {}, onClose, onSaved }: { task?
     if (scope === 'farm' && !farmId) return setError('Add a farm first.')
     const crop = L?.crops.find((c) => c.id === cropId)
     const machine = L?.machines.find((m) => m.id === machineId)
+    setBusy(true)
+    let finalStageId = stageId
+    if (scope === 'crop' && stageId === OTHERS) {
+      const sort = Math.max(0, ...(stages.data ?? []).map((x) => x.sort_order)) + 1
+      const r = await supabase.from('crop_stages').insert({ crop_id: cropId, name: 'Others', sort_order: sort }).select('id').single()
+      if (r.error) {
+        setBusy(false)
+        return setError(dbMessage(r.error.message))
+      }
+      finalStageId = r.data.id
+      setStageId(finalStageId)
+      stages.reload()
+    }
     const row = {
       scope,
-      farm_id: scope === 'crop' ? crop!.farm_id : scope === 'machinery' ? machine!.farm_id : farmId,
+      farm_id: scope === 'crop' ? (crop?.farm_id ?? start.farmId ?? task?.farm_id ?? '') : scope === 'machinery' ? machine!.farm_id : farmId,
       crop_id: scope === 'crop' ? cropId : null,
-      crop_stage_id: scope === 'crop' ? stageId : null,
+      crop_stage_id: scope === 'crop' ? finalStageId : null,
       machinery_id: scope === 'machinery' ? machineId : null,
       title: title.trim(),
       notes: toTextOrNull(notes),
       due_date: toTextOrNull(due),
       status: done ? 'done' : 'open',
     }
-    setBusy(true)
     const { error } = task ? await supabase.from('tasks').update(row).eq('id', task.id) : await supabase.from('tasks').insert(row)
     setBusy(false)
     if (error) return setError(dbMessage(error.message))
@@ -100,24 +121,26 @@ export default function TaskForm({ task, start = {}, onClose, onSaved }: { task?
         <p className="text-sm text-stone-500">{lookups.error ?? 'Loading…'}</p>
       ) : (
         <div className="space-y-4">
-          <div role="radiogroup" aria-label="Task for" className="grid grid-cols-3 gap-1 rounded-xl bg-stone-100 p-1">
+          {!locked && <div role="radiogroup" aria-label="Task for" className="grid grid-cols-3 gap-1 rounded-xl bg-stone-100 p-1">
             {scopes.map((s) => (
               <button key={s.key} role="radio" aria-checked={scope === s.key} onClick={() => setScope(s.key)} className={`min-h-11 rounded-lg text-sm font-medium ${scope === s.key ? 'bg-white text-green-800 shadow-sm' : 'text-stone-600'}`}>
                 {s.label}
               </button>
             ))}
-          </div>
+          </div>}
           <FormGrid>
             {scope === 'crop' && (
               <>
                 <Field label="Crop *">
-                  <Select value={cropId} onChange={(e) => setCropId(e.target.value)}>
+                  <Select value={cropId} onChange={(e) => setCropId(e.target.value)} disabled={locked} className={locked ? 'bg-stone-100 text-stone-600' : ''}>
+                    {locked && !L.crops.some((c) => c.id === cropId) && <option value={cropId}>{start.cropLabel ?? 'This crop'}</option>}
                     {L.crops.map((c) => <option key={c.id} value={c.id}>{c.crop_name}{c.variety ? ` (${c.variety})` : ''} · {c.season} {c.season_year}</option>)}
                   </Select>
                 </Field>
                 <Field label="Stage *">
                   <Select value={stageId} onChange={(e) => setStageId(e.target.value)}>
-                    {(stages.data ?? []).filter((s) => s.is_active || s.id === stageId).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    {orderedStages.map((s) => <option key={s.id} value={s.id}>{s.name}{s.id === currentStageId ? ' (current)' : ''}</option>)}
+                    {!othersStage && <option value={OTHERS}>Others</option>}
                   </Select>
                 </Field>
               </>

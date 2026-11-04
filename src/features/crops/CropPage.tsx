@@ -1,13 +1,12 @@
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, ListChecks, Pencil, Plus, Receipt, Settings2, Wallet, Wheat } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ChevronDown, ListChecks, Pencil, Plus, Receipt, Settings2, Wallet, Wheat } from 'lucide-react'
 import AmountWithPerAcre from '../../components/AmountWithPerAcre'
 import Bars, { groupExpense } from '../../components/ExpenseBars'
 import { NetIcon, TILE } from '../../components/MoneyTiles'
-import Chips from '../../components/ui/Chips'
 import Sheet from '../../components/ui/Sheet'
 import { Button, ErrorText, Field, Select } from '../../components/ui/form'
-import { daysSince, formatAcres } from '../../lib/format'
+import { daysSince, formatAcres, todayISO } from '../../lib/format'
 import { supabase } from '../../lib/supabase'
 import { useRows } from '../../lib/useRows'
 import type { Crop, Farm } from '../../types/domain'
@@ -202,29 +201,70 @@ function Summary({ crop, tasks, moneyKey, onChanged }: { crop: Crop; tasks: Task
   )
 }
 
-// All tasks of this crop, grouped by stage in stage order.
+// All tasks of this crop: one collapsible panel per stage (stage order, "Others" last; current stage open),
+// inside each: Overdue, Open, Done. Filters: Overdue / Open / Done on row 1, All + Add task on row 2.
+type TaskView = 'overdue' | 'open' | 'done' | 'all'
+type TaskSection = 'overdue' | 'open' | 'done'
+const SECTIONS: { key: TaskSection; label: string; tone: string }[] = [
+  { key: 'overdue', label: 'Overdue', tone: 'bg-red-50/70 text-red-800' },
+  { key: 'open', label: 'Open', tone: 'bg-amber-50/70 text-amber-900' },
+  { key: 'done', label: 'Done', tone: 'bg-stone-50 text-stone-600' },
+]
+
 function CropTasks({ crop, tasks, loading, onChanged }: { crop: Crop; tasks: TaskRow[]; loading: boolean; onChanged: () => void }) {
-  const [view, setView] = useState<'open' | 'done' | 'all'>('open')
+  const [view, setView] = useState<TaskView>('open')
   const [openTask, setOpenTask] = useState<TaskRow | 'new' | null>(null)
-  const counts = { open: tasks.filter((t) => t.status === 'open').length, done: tasks.filter((t) => t.status === 'done').length, all: tasks.length }
-  const shown = view === 'all' ? tasks : tasks.filter((t) => t.status === view)
+  const [flipped, setFlipped] = useState<Set<string>>(() => new Set())
+  const today = todayISO()
+  const sectionOf = (t: TaskRow): TaskSection => (t.status === 'done' ? 'done' : t.due_date && t.due_date < today ? 'overdue' : 'open')
+  // Open = every open task (overdue included); Overdue = only the overdue ones.
+  const inView = (t: TaskRow) => view === 'all' || (view === 'open' ? t.status === 'open' : sectionOf(t) === view)
+  const counts = {
+    overdue: tasks.filter((t) => sectionOf(t) === 'overdue').length,
+    open: tasks.filter((t) => t.status === 'open').length,
+    done: tasks.filter((t) => t.status === 'done').length,
+    all: tasks.length,
+  }
+  const shown = tasks.filter(inView)
 
   const groups = useMemo(() => {
     const map = new Map<string, { id: string | null; order: number; rows: TaskRow[] }>()
     for (const t of shown) {
       const key = t.stage?.name ?? 'No stage'
-      if (!map.has(key)) map.set(key, { id: t.crop_stage_id, order: t.stage?.sort_order ?? 999, rows: [] })
+      const order = t.stage && isOthersStage(t.stage.name) ? 9999 : (t.stage?.sort_order ?? 999)
+      if (!map.has(key)) map.set(key, { id: t.crop_stage_id, order, rows: [] })
       map.get(key)!.rows.push(t)
     }
     return [...map.entries()].sort((a, b) => a[1].order - b[1].order)
   }, [shown])
 
+  // Overdue / open: due date first (no date last), then checklist order; done: latest first.
+  const sortIn = (key: TaskSection, rows: TaskRow[]) =>
+    [...rows].sort((a, b) =>
+      key === 'done'
+        ? (b.done_on ?? '').localeCompare(a.done_on ?? '')
+        : (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999') || a.sort_order - b.sort_order,
+    )
+
+  const chip = (k: TaskView, label: string, tone = '') => (
+    <button key={k} role="tab" aria-selected={view === k} onClick={() => setView(k)}
+      className={`flex min-h-11 items-center justify-center gap-1.5 rounded-full border px-3 text-sm font-medium ${view === k ? 'border-green-700 bg-green-700 text-white' : `border-stone-200 bg-white text-stone-700 ${tone}`}`}>
+      {label}<span className={`rounded-full px-2 text-xs ${view === k ? 'bg-white/20' : 'bg-stone-100 text-stone-600'}`}>{counts[k]}</span>
+    </button>
+  )
+
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <Chips label="Task view" value={view} onChange={(k) => setView(k as typeof view)}
-          chips={[{ key: 'open', label: 'Open', count: counts.open }, { key: 'done', label: 'Done', count: counts.done }, { key: 'all', label: 'All', count: counts.all }]} />
-        <Button onClick={() => setOpenTask('new')}><Plus className="h-4 w-4" />Add task</Button>
+      <div role="tablist" aria-label="Task view" className="mb-3 space-y-2">
+        <div className="grid grid-cols-3 gap-2 sm:flex">
+          {chip('overdue', 'Overdue', counts.overdue ? 'text-red-700' : '')}
+          {chip('open', 'Open')}
+          {chip('done', 'Done')}
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:flex">
+          {chip('all', 'All')}
+          <Button onClick={() => setOpenTask('new')}><Plus className="h-4 w-4" />Add task</Button>
+        </div>
       </div>
 
       {loading ? (
@@ -232,18 +272,36 @@ function CropTasks({ crop, tasks, loading, onChanged }: { crop: Crop; tasks: Tas
       ) : !shown.length ? (
         <p className="rounded-2xl bg-white p-6 text-center text-sm text-stone-500">No tasks here.</p>
       ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="space-y-3">
           {groups.map(([name, g]) => {
             const isCurrent = g.id != null && g.id === crop.current_stage_id
+            const isOpen = isCurrent !== flipped.has(name)
+            const over = g.rows.filter((t) => sectionOf(t) === 'overdue').length
             return (
               <section key={name} className={`overflow-hidden rounded-2xl border bg-white ${isCurrent ? 'border-green-300' : 'border-stone-200'}`}>
-                <h3 className={`flex items-center gap-2 border-b px-4 py-2 text-sm font-semibold ${isCurrent ? 'border-green-100 bg-green-50 text-green-900' : 'border-stone-100 bg-stone-50 text-stone-800'}`}>
-                  {name} <span className="font-normal text-stone-500">· {g.rows.length}</span>
-                  {isCurrent && <span className="ml-auto rounded-full bg-green-700 px-2 py-0.5 text-[11px] font-medium text-white">Current stage</span>}
-                </h3>
-                <ul className="divide-y divide-stone-100">
-                  {g.rows.map((t) => <TaskItem key={t.id} task={t} showPlace={false} onChanged={onChanged} onOpen={setOpenTask} />)}
-                </ul>
+                <button aria-expanded={isOpen} onClick={() => setFlipped((p) => { const n = new Set(p); if (n.has(name)) n.delete(name); else n.add(name); return n })}
+                  className={`flex min-h-14 w-full items-center gap-2 px-4 py-2 text-left ${isCurrent ? 'bg-green-50' : 'bg-stone-50'}`}>
+                  <ChevronDown aria-hidden className={`h-4 w-4 shrink-0 text-stone-500 transition-transform ${isOpen ? '' : '-rotate-90'}`} />
+                  <span className="min-w-0 flex-1 truncate font-semibold text-stone-900">{name}</span>
+                  {isCurrent && <span className="shrink-0 rounded-full bg-green-700 px-2 py-0.5 text-[11px] font-medium text-white">Current</span>}
+                  {over > 0 && <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-700">{over} overdue</span>}
+                  <span className="shrink-0 text-xs text-stone-500">{g.rows.length}</span>
+                </button>
+                {isOpen && (
+                  <div className="border-t border-stone-100">
+                    {SECTIONS.map(({ key, label, tone }) => {
+                      const rows = sortIn(key, g.rows.filter((t) => sectionOf(t) === key))
+                      return rows.length ? (
+                        <div key={key}>
+                          <p className={`px-4 py-1.5 text-xs font-bold ${tone}`}>{label} · {rows.length}</p>
+                          <ul className="divide-y divide-stone-100">
+                            {rows.map((t) => <TaskItem key={t.id} task={t} showPlace={false} onChanged={onChanged} onOpen={setOpenTask} />)}
+                          </ul>
+                        </div>
+                      ) : null
+                    })}
+                  </div>
+                )}
               </section>
             )
           })}
@@ -253,7 +311,7 @@ function CropTasks({ crop, tasks, loading, onChanged }: { crop: Crop; tasks: Tas
       {openTask && (
         <TaskForm
           task={openTask === 'new' ? null : openTask}
-          start={{ scope: 'crop', cropId: crop.id, stageId: crop.current_stage_id ?? undefined }}
+          start={{ scope: 'crop', cropId: crop.id, stageId: crop.current_stage_id ?? undefined, farmId: crop.farm_id, lockCrop: true, cropLabel: `${crop.crop_name}${crop.variety ? ` (${crop.variety})` : ''} · ${crop.season} ${crop.season_year}` }}
           onClose={() => setOpenTask(null)}
           onSaved={onChanged}
         />
